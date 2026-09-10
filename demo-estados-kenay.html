@@ -1,0 +1,955 @@
+<!--
+  ============================================================================
+  DEMO INTERACTIVA · "Estados de WhatsApp" para Distribuidora Kenay
+  ----------------------------------------------------------------------------
+  Simulación con fines de demostración comercial. NO es la app real de WhatsApp
+  ni está afiliada a WhatsApp LLC / Meta. Todas las imágenes de producto son
+  marcadores de posición (bloque de color + emoji).
+
+  Para reemplazar por fotos reales más adelante:
+    - En los arrays de datos (más abajo, buscar "DATOS DE FOTOS"), cambiar
+      { emoji, label, bg }  ->  { label, img: 'ruta/o/url-de-la-foto.jpg' }
+    - renderTile() y buildPreview() ya soportan la propiedad `img` (se usa como
+      background-image). No hace falta tocar nada más.
+  Archivo único, sin build, sin backend. Solo requiere internet para la fuente.
+  ============================================================================
+-->
+<title>Demo Estados Kenay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --wa-green:#075E54;        /* verde oscuro característico del header */
+    --wa-green-d:#054d44;
+    --wa-teal:#25D366;         /* verde acento: FAB, checks, badges */
+    --ink:#111b21;
+    --muted:#667781;
+    --line:#e9edef;
+    --bg:#f0f2f5;
+    --antes:#c0392b;
+    --despues:#1e7d34;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:'Roboto',system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+    background:#e7ebee;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    padding:14px 12px 40px;
+  }
+  .wrap{max-width:460px;margin:0 auto}
+
+  /* ---------- intro / gate ---------- */
+  .intro{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:12px;box-shadow:0 6px 22px rgba(0,0,0,.06);
+  }
+  .intro h1{font-size:17px;margin:0 0 4px;letter-spacing:.2px}
+  .intro p{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
+  .intro .warn{margin-top:10px;font-size:11px;color:#8a94a0}
+
+  #gate{margin-bottom:16px}
+  #gate.hidden,#sim.hidden{display:none}
+  .gate-grid{display:grid;gap:10px}
+  @media(min-width:420px){.gate-grid{grid-template-columns:1fr 1fr}}
+  .mode-btn{
+    text-align:left;border:2px solid var(--line);background:#fff;border-radius:var(--radius);
+    padding:14px 14px;cursor:pointer;transition:transform .12s ease,border-color .12s ease,box-shadow .12s;
+    display:flex;flex-direction:column;gap:3px;
+  }
+  .mode-btn:hover{border-color:#c7d0d6;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+  .mode-btn:active{transform:scale(.985)}
+  .mode-btn .mb-emoji{font-size:24px}
+  .mode-btn .mb-title{font-weight:700;font-size:14px}
+  .mode-btn.antes .mb-title{color:var(--antes)}
+  .mode-btn.despues .mb-title{color:var(--despues)}
+  .mode-btn .mb-sub{font-size:12px;color:var(--muted);line-height:1.35}
+
+  /* ---------- HUD ---------- */
+  .hud{
+    position:sticky;top:6px;z-index:30;display:flex;align-items:center;gap:8px;
+    background:#111b21;color:#fff;border-radius:999px;padding:7px 8px 7px 14px;
+    font-size:13px;box-shadow:0 8px 20px rgba(0,0,0,.25);margin:0 auto 10px;width:max-content;max-width:100%;
+  }
+  .hud b{font-size:15px}
+  .hud .hud-mode{font-size:11px;opacity:.7;border-left:1px solid rgba(255,255,255,.25);padding-left:8px}
+  .hud .hud-reset{
+    margin-left:2px;border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:11px;
+    padding:5px 10px;border-radius:999px;cursor:pointer;
+  }
+  .hud .hud-reset:hover{background:rgba(255,255,255,.24)}
+
+  /* ---------- teléfono ---------- */
+  .phone{
+    height:clamp(440px,74vh,600px);
+    aspect-ratio:300 / 649;      /* el ancho se calcula a partir de la altura -> siempre entra en pantalla */
+    width:auto;max-width:94vw;
+    margin:0 auto;background:#0a0a0a;padding:10px;border-radius:44px;
+    box-shadow:0 24px 60px rgba(0,0,0,.38),inset 0 0 0 2px #262626;position:relative;
+  }
+  .viewport{
+    position:relative;width:100%;height:100%;background:#000;border-radius:34px;overflow:hidden;
+  }
+  .cam{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;
+    background:#0c0c0c;box-shadow:inset 0 0 0 1.5px #2b2b2b;z-index:45}
+
+  .statusbar{
+    position:absolute;top:0;left:0;right:0;height:26px;z-index:40;
+    display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+    font-size:11px;font-weight:500;color:#fff;pointer-events:none;
+  }
+  .viewport[data-light="true"] .statusbar{color:#111b21}
+  .sb-right{display:flex;align-items:center;gap:6px}
+  .sig{display:flex;align-items:flex-end;gap:1px;height:9px}
+  .sig i{width:2px;background:currentColor;border-radius:1px}
+  .sig i:nth-child(1){height:3px}.sig i:nth-child(2){height:5px}.sig i:nth-child(3){height:7px}.sig i:nth-child(4){height:9px}
+  .batt{position:relative;width:17px;height:9px;border:1px solid currentColor;border-radius:2px}
+  .batt::after{content:"";position:absolute;right:-3px;top:2px;width:2px;height:3px;background:currentColor;border-radius:0 1px 1px 0}
+  .batt::before{content:"";position:absolute;left:1px;top:1px;bottom:1px;width:72%;background:currentColor;border-radius:1px}
+
+  .navbar{position:absolute;left:0;right:0;bottom:0;height:16px;z-index:40;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .navbar .pill{width:110px;height:4px;border-radius:2px;background:rgba(255,255,255,.55)}
+  .viewport[data-light="true"] .navbar .pill{background:rgba(0,0,0,.32)}
+
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;padding-top:26px;padding-bottom:16px;background:#fff}
+  .screen.active{display:flex}
+
+  /* ---------- lock ---------- */
+  #scr-lock{
+    background:linear-gradient(160deg,#0f2027,#203a43 55%,#2c5364);
+    align-items:center;justify-content:flex-start;color:#fff;
+  }
+  .lock-clock{margin-top:14%;text-align:center}
+  .lc-time{font-size:56px;font-weight:300;letter-spacing:1px;line-height:1}
+  .lc-date{font-size:13px;opacity:.85;margin-top:6px}
+  .lock-notif{
+    margin:26px 16px 0;background:rgba(255,255,255,.13);backdrop-filter:blur(4px);
+    border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:11px 12px;display:flex;gap:10px;
+    cursor:pointer;width:calc(100% - 32px);text-align:left;
+  }
+  .lock-notif:active{background:rgba(255,255,255,.2)}
+  .lock-notif.pulse{animation:softpulse 1.9s ease-out infinite}
+  .ln-icon{width:34px;height:34px;border-radius:9px;background:var(--wa-teal);display:grid;place-items:center;flex:0 0 auto}
+  .ln-icon svg{width:20px;height:20px;fill:#fff}
+  .ln-title{font-size:12.5px;font-weight:700;display:flex;gap:6px;align-items:baseline}
+  .ln-time{font-size:10px;font-weight:400;opacity:.7}
+  .ln-text{font-size:12px;opacity:.92;line-height:1.35;margin-top:2px}
+  .lock-wa{
+    margin-top:auto;margin-bottom:8px;width:54px;height:54px;border-radius:16px;border:none;
+    background:var(--wa-teal);display:grid;place-items:center;cursor:pointer;
+  }
+  .lock-wa svg{width:30px;height:30px;fill:#fff}
+  .lock-wa.pulse{animation:softpulse 1.9s ease-out infinite}
+  .lock-hint{font-size:11px;opacity:.8;margin-bottom:6px}
+  .hidden{display:none!important}
+
+  /* ---------- WhatsApp header ---------- */
+  .wa-header{background:var(--wa-green);color:#fff;flex:0 0 auto}
+  .wa-top{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 8px}
+  .wa-title{font-size:19px;font-weight:700;letter-spacing:.3px}
+  .wa-actions{display:flex;gap:16px}
+  .wa-actions svg{width:19px;height:19px;fill:#fff;opacity:.95}
+  .wa-tabs{display:flex}
+  .wa-tab{
+    flex:1;text-align:center;font-size:12px;font-weight:700;letter-spacing:.6px;padding:10px 0 11px;
+    color:rgba(255,255,255,.6);cursor:pointer;position:relative;background:none;border:none;font-family:inherit;
+  }
+  .wa-tab.active{color:#fff}
+  .wa-tab.active::after{content:"";position:absolute;left:12%;right:12%;bottom:0;height:3px;background:#fff;border-radius:3px}
+
+  .wa-body{flex:1;overflow-y:auto;background:#fff}
+
+  /* chats de relleno (modo ANTES antes de tocar la pestaña) */
+  .chat-row{display:flex;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);align-items:center}
+  .avatar{width:44px;height:44px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;font-size:20px;color:#fff}
+  .chat-row .cr-main{flex:1;min-width:0}
+  .cr-name{font-size:14px;font-weight:500}
+  .cr-msg{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cr-time{font-size:10.5px;color:var(--muted);align-self:flex-start;margin-top:3px}
+
+  /* Estados */
+  .mystatus{display:flex;gap:12px;padding:13px 14px;align-items:center;cursor:pointer;border-bottom:6px solid var(--bg)}
+  .mystatus:active{background:#f5f6f6}
+  .ms-av{position:relative;width:46px;height:46px;flex:0 0 auto}
+  .ms-av .avatar{width:46px;height:46px}
+  .ms-plus{position:absolute;right:-2px;bottom:-2px;width:19px;height:19px;border-radius:50%;background:var(--wa-teal);border:2px solid #fff;display:grid;place-items:center}
+  .ms-plus svg{width:11px;height:11px;fill:#fff}
+  .ms-txt .t1{font-size:14px;font-weight:500}
+  .ms-txt .t2{font-size:12px;color:var(--muted);margin-top:1px}
+  .status-label{font-size:12px;color:var(--muted);padding:10px 14px 4px;background:#fff}
+  .status-row{display:flex;gap:12px;padding:11px 14px;align-items:center}
+  .ring{padding:2px;border-radius:50%;background:conic-gradient(var(--wa-teal) 300deg,#cfd8dc 0)}
+  .ring .avatar{width:42px;height:42px;border:2px solid #fff}
+  .sr-name{font-size:14px;font-weight:500}
+  .sr-time{font-size:12px;color:var(--muted);margin-top:1px}
+
+  /* ---------- selector de galería (nativo Android) ---------- */
+  #scr-picker{background:#fafafa}
+  .pk-bar{
+    height:48px;flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 6px 0 4px;
+    background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:6;
+  }
+  .icon-btn{width:38px;height:38px;border:none;background:none;display:grid;place-items:center;cursor:pointer;border-radius:50%}
+  .icon-btn:active{background:#eee}
+  .icon-btn svg{width:20px;height:20px;fill:#3b4a54}
+  .folder-chip{
+    display:flex;align-items:center;gap:2px;border:none;background:none;font-family:inherit;
+    font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;padding:6px 6px;border-radius:8px;
+  }
+  .folder-chip svg{width:20px;height:20px;fill:var(--ink);transition:transform .15s}
+  .folder-chip.open svg{transform:rotate(180deg)}
+  .folder-chip.hint{animation:chippulse 1.8s ease-out infinite}
+  .pk-right{margin-left:auto;font-size:11px;color:var(--muted);padding-right:8px}
+
+  .folder-list{
+    position:absolute;top:48px;left:0;right:0;background:#fff;z-index:7;
+    box-shadow:0 12px 26px rgba(0,0,0,.18);max-height:66%;overflow:auto;border-bottom:1px solid var(--line);
+  }
+  .fl-row{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border:none;background:none;
+    font-family:inherit;text-align:left;cursor:pointer}
+  .fl-row:active{background:#f2f2f2}
+  .fl-thumb{width:38px;height:38px;border-radius:6px;display:grid;place-items:center;font-size:18px;flex:0 0 auto}
+  .fl-meta{flex:1;min-width:0}
+  .fl-meta b{font-size:13.5px;font-weight:500;display:block}
+  .fl-meta small{font-size:11px;color:var(--muted)}
+  .fl-cur{color:var(--wa-teal);font-weight:700}
+
+  .grid-note{font-size:11px;color:var(--muted);padding:7px 12px 3px;background:#fafafa}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:0 0 4px;flex:1;overflow-y:auto;align-content:start;background:#fafafa}
+  .tile{
+    position:relative;aspect-ratio:1;border:none;padding:0;cursor:pointer;overflow:hidden;
+    display:grid;place-items:center;background-size:cover;background-position:center;
+  }
+  .tile .emo{font-size:clamp(17px,6.2vw,25px);filter:saturate(1.1)}
+  .tile .tlab{
+    position:absolute;left:0;right:0;bottom:0;font-size:8.5px;line-height:1.2;color:#fff;
+    padding:8px 3px 3px;background:linear-gradient(transparent,rgba(0,0,0,.6));
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;
+  }
+  .tile .chk{
+    position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;
+    border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25);display:grid;place-items:center;
+    color:#fff;font-size:11px;font-weight:700;background:rgba(0,0,0,.12);
+  }
+  .tile.sel .chk{background:var(--wa-teal);border-color:#fff}
+  .tile.sel .chk svg{width:13px;height:13px;fill:#fff}
+  .tile.sel{outline:3px solid var(--wa-teal);outline-offset:-3px}
+  .tile.hint .chk{animation:softpulse 1.8s ease-out infinite}
+
+  .fab{
+    position:absolute;right:16px;bottom:30px;width:52px;height:52px;border-radius:50%;border:none;
+    background:var(--wa-teal);display:grid;place-items:center;cursor:pointer;z-index:8;
+    box-shadow:0 8px 18px rgba(37,211,102,.45);transition:opacity .15s,transform .1s;
+  }
+  .fab svg{width:24px;height:24px;fill:#fff}
+  .fab:active{transform:scale(.94)}
+  .fab:disabled{opacity:.35;box-shadow:none;cursor:default}
+  .fab .fab-badge{
+    position:absolute;top:-3px;right:-3px;min-width:19px;height:19px;border-radius:999px;background:#fff;
+    color:var(--despues);font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px;border:2px solid var(--wa-teal);
+  }
+
+  /* ---------- vista previa ---------- */
+  #scr-preview{background:#0b141a;color:#fff}
+  .pv-top{display:flex;align-items:center;gap:8px;padding:4px 8px}
+  .pv-top .icon-btn svg{fill:#fff}
+  .pv-top span{font-size:14px;font-weight:500}
+  .pv-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 14px;gap:10px;overflow:auto}
+  .pv-main{
+    width:100%;max-width:230px;aspect-ratio:1;border-radius:10px;display:grid;place-items:center;position:relative;
+    background-size:cover;background-position:center;
+  }
+  .pv-emo{font-size:70px}
+  .pv-count{position:absolute;top:8px;right:10px;background:rgba(0,0,0,.5);font-size:11px;padding:3px 8px;border-radius:999px}
+  .pv-lab{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.5);font-size:11px;padding:3px 8px;border-radius:6px}
+  .pv-strip{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  .pv-th{
+    width:40px;height:40px;border-radius:6px;display:grid;place-items:center;font-size:18px;position:relative;
+    background-size:cover;background-position:center;outline:2px solid rgba(255,255,255,.35);
+  }
+  .pv-th b{position:absolute;right:-3px;top:-3px;width:15px;height:15px;border-radius:50%;background:var(--wa-teal);font-size:9px;display:grid;place-items:center}
+  .pv-caption{
+    width:100%;margin:0 14px;background:rgba(255,255,255,.1);border-radius:999px;padding:9px 14px;font-size:12px;color:rgba(255,255,255,.6)
+  }
+  .pv-share{
+    margin:8px 14px 4px;border:none;background:var(--wa-teal);color:#fff;font-family:inherit;font-weight:700;font-size:14px;
+    padding:13px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+  }
+  .pv-share:active{filter:brightness(.95)}
+  .pv-share svg{width:18px;height:18px;fill:#fff}
+
+  /* ---------- confirmación ---------- */
+  #scr-confirm,#scr-summary{background:#fff;align-items:center;justify-content:center;text-align:center;padding-left:22px;padding-right:22px;overflow-y:auto}
+  .cf-circle{width:78px;height:78px;border-radius:50%;background:var(--wa-teal);display:grid;place-items:center;animation:pop .32s ease-out}
+  .cf-circle svg{width:40px;height:40px;fill:#fff}
+  .cf-title{font-size:18px;font-weight:700;margin-top:16px}
+  .cf-sub{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .cf-btn{
+    margin-top:20px;border:none;background:var(--wa-green);color:#fff;font-family:inherit;font-weight:700;font-size:13px;
+    padding:11px 22px;border-radius:999px;cursor:pointer;
+  }
+  .cf-btn:active{filter:brightness(.95)}
+
+  /* ---------- resumen ---------- */
+  .sm-emoji{font-size:40px}
+  .sm-title{font-size:19px;font-weight:700;margin-top:4px}
+  .sm-list{list-style:none;padding:0;margin:14px 0 4px;font-size:13px;line-height:1.9;color:#2b3942}
+  .sm-list b{color:var(--ink)}
+  .sm-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px;width:100%}
+  .sm-actions button{
+    border:1px solid var(--line);background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;
+    padding:10px;border-radius:10px;cursor:pointer;
+  }
+  .sm-actions button.primary{background:var(--wa-green);color:#fff;border-color:var(--wa-green)}
+  .sm-actions button:active{filter:brightness(.97)}
+
+  /* ---------- toast ---------- */
+  #toast{
+    position:absolute;left:50%;bottom:74px;transform:translateX(-50%);z-index:60;pointer-events:none;
+    background:rgba(0,0,0,.82);color:#fff;font-size:11.5px;padding:8px 14px;border-radius:16px;
+    max-width:78%;text-align:center;opacity:0;transition:opacity .2s;line-height:1.35;
+  }
+  #toast.show{opacity:1}
+
+  /* ---------- comparación (fuera del teléfono) ---------- */
+  #cmp{
+    margin:20px auto 0;background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;box-shadow:0 6px 22px rgba(0,0,0,.06);
+  }
+  #cmp h2{font-size:14px;margin:0 0 12px;text-align:center;letter-spacing:.2px}
+  .cmp-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .cmp-card{border:2px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center}
+  .cmp-card.a{border-color:#f0c6c1}
+  .cmp-card.d{border-color:#bfe3c8}
+  .cmp-tag{font-size:11px;font-weight:700;letter-spacing:.5px}
+  .cmp-card.a .cmp-tag{color:var(--antes)}
+  .cmp-card.d .cmp-tag{color:var(--despues)}
+  .cmp-num{font-size:38px;font-weight:700;line-height:1.1;margin:2px 0}
+  .cmp-num small{font-size:12px;font-weight:500;color:var(--muted)}
+  .cmp-meta{font-size:10.5px;color:var(--muted);line-height:1.5;margin-top:4px}
+  .cmp-banner{
+    margin-top:12px;font-size:12px;text-align:center;background:#eef7f0;color:#1e7d34;
+    border:1px solid #cfe9d6;border-radius:10px;padding:10px;line-height:1.45;
+  }
+  .cmp-banner.wait{background:#f6f7f8;color:#667781;border-color:var(--line)}
+
+  footer{margin:22px auto 0;font-size:10.5px;color:#8a94a0;line-height:1.5;text-align:center;max-width:400px}
+
+  @keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+  @keyframes softpulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,.55)}70%{box-shadow:0 0 0 12px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}
+  @keyframes chippulse{0%{box-shadow:0 0 0 0 rgba(7,94,84,.35)}70%{box-shadow:0 0 0 10px rgba(7,94,84,0)}100%{box-shadow:0 0 0 0 rgba(7,94,84,0)}}
+</style>
+
+<div class="wrap">
+
+  <div class="intro">
+    <h1>Distribuidora Kenay · Estados de WhatsApp</h1>
+    <p>Elegí un modo y <b>tocá la pantalla del teléfono</b> como si lo tuvieras en la mano. Vas a subir tu Estado de la madrugada de las dos formas y comparar cuántos toques lleva cada una.</p>
+    <div class="warn">Simulación con fines de demostración comercial. No es la aplicación real de WhatsApp ni está afiliada a WhatsApp&nbsp;LLC / Meta.</div>
+  </div>
+
+  <!-- ELECCIÓN DE MODO -->
+  <div id="gate">
+    <div class="gate-grid">
+      <button class="mode-btn antes" onclick="chooseMode('antes')">
+        <span class="mb-emoji">😮‍💨</span>
+        <span class="mb-title">ANTES · como es hoy</span>
+        <span class="mb-sub">3:14 AM. Buscar foto por foto entre carpetas desordenadas del celular.</span>
+      </button>
+      <button class="mode-btn despues" onclick="chooseMode('despues')">
+        <span class="mb-emoji">✨</span>
+        <span class="mb-title">DESPUÉS · con el sistema</span>
+        <span class="mb-sub">4:31 AM. La carpeta “Estados Kenay” del día ya está armada y ordenada.</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SIMULADOR -->
+  <div id="sim" class="hidden">
+    <div class="hud">
+      <span>👆 <b id="tapN">0</b> <span id="tapWord">toques</span></span>
+      <span class="hud-mode" id="hudMode"></span>
+      <button class="hud-reset" onclick="resetRun()">↺ Cambiar modo</button>
+    </div>
+
+    <div class="phone">
+      <div class="viewport" id="viewport" data-light="false">
+        <div class="cam"></div>
+
+        <!-- barra de estado Android -->
+        <div class="statusbar">
+          <span id="sbTime">3:14</span>
+          <span class="sb-right">
+            <span class="sig"><i></i><i></i><i></i><i></i></span>
+            <span style="font-size:10px">Wi-Fi</span>
+            <span class="batt"></span><span style="font-size:10px">78%</span>
+          </span>
+        </div>
+
+        <!-- ===== LOCK ===== -->
+        <div class="screen active" id="scr-lock">
+          <div class="lock-clock">
+            <div class="lc-time" id="lockTime">3:14</div>
+            <div class="lc-date">Viernes, 6 de septiembre</div>
+          </div>
+          <button id="lockNotif" class="lock-notif hidden" onclick="openFromLock()">
+            <span class="ln-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.6 15l-1.3 4.8 5-1.3A10 10 0 1012 2z"/></svg>
+            </span>
+            <span class="ln-body">
+              <span class="ln-title">Sistema Kenay <span class="ln-time">ahora</span></span>
+              <span class="ln-text">Ya tengo listas tus fotos de hoy. Tocá para verlas.</span>
+            </span>
+          </button>
+          <button id="lockWA" class="lock-wa" onclick="openFromLock()">
+            <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 00-8.6 15l-1.3 4.8 5-1.3A10 10 0 1012 2z"/></svg>
+          </button>
+          <div class="lock-hint" id="lockHint">Tocá el ícono de WhatsApp</div>
+        </div>
+
+        <!-- ===== WHATSAPP / ESTADOS ===== -->
+        <div class="screen" id="scr-estados">
+          <div class="wa-header">
+            <div class="wa-top">
+              <span class="wa-title">WhatsApp</span>
+              <span class="wa-actions">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 10-.7.7l.3.3v.8l5 5 1.5-1.5-5-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/></svg>
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+              </span>
+            </div>
+            <div class="wa-tabs">
+              <button class="wa-tab" data-tab="chats" onclick="setTab('chats')">CHATS</button>
+              <button class="wa-tab active" data-tab="estados" onclick="setTab('estados')">ESTADOS</button>
+              <button class="wa-tab" data-tab="llamadas" onclick="setTab('llamadas')">LLAMADAS</button>
+            </div>
+          </div>
+          <div class="wa-body" id="waBody"><!-- lo llena renderEstados() --></div>
+        </div>
+
+        <!-- ===== SELECTOR DE GALERÍA ===== -->
+        <div class="screen" id="scr-picker">
+          <div class="pk-bar">
+            <button class="icon-btn" onclick="pickerBack()" aria-label="Volver">
+              <svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>
+            </button>
+            <button class="folder-chip" id="folderChip" onclick="toggleFolderList()">
+              <span id="folderName">Cámara</span>
+              <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+            </button>
+            <span class="pk-right" id="folderCount">918 elementos</span>
+          </div>
+          <div class="folder-list hidden" id="folderList"></div>
+          <div class="grid-note" id="gridNote"></div>
+          <div class="grid" id="grid"></div>
+          <button class="fab" id="fab" disabled onclick="sendFab()" aria-label="Enviar">
+            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+            <span class="fab-badge hidden" id="fabBadge">0</span>
+          </button>
+        </div>
+
+        <!-- ===== VISTA PREVIA ===== -->
+        <div class="screen" id="scr-preview">
+          <div class="pv-top">
+            <button class="icon-btn" onclick="previewBack()" aria-label="Volver">
+              <svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>
+            </button>
+            <span>Tu estado</span>
+          </div>
+          <div class="pv-body" id="previewBody"></div>
+          <div class="pv-caption">Añadir un comentario…</div>
+          <button class="pv-share" onclick="share()">
+            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+            Compartir en tu Estado
+          </button>
+        </div>
+
+        <!-- ===== CONFIRMACIÓN ===== -->
+        <div class="screen" id="scr-confirm">
+          <div class="cf-circle"><svg viewBox="0 0 24 24"><path d="M9 16.2l-4.2-4.2-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg></div>
+          <div class="cf-title">Estado publicado</div>
+          <div class="cf-sub" id="cfSub"></div>
+          <button class="cf-btn" id="cfBtn"></button>
+        </div>
+
+        <!-- ===== RESUMEN ===== -->
+        <div class="screen" id="scr-summary">
+          <div id="summaryBody"></div>
+        </div>
+
+        <div class="navbar"><span class="pill"></span></div>
+        <div id="toast"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARACIÓN -->
+  <div id="cmp">
+    <h2>Toques para publicar el Estado de la madrugada</h2>
+    <div class="cmp-cards">
+      <div class="cmp-card a">
+        <div class="cmp-tag">ANTES</div>
+        <div class="cmp-num" id="cmpA">—</div>
+        <div class="cmp-meta">4 piezas · 4 cambios de carpeta · buscando entre 918 fotos</div>
+      </div>
+      <div class="cmp-card d">
+        <div class="cmp-tag">DESPUÉS</div>
+        <div class="cmp-num" id="cmpD">—</div>
+        <div class="cmp-meta">5 piezas · 0 cambios de carpeta · carpeta del día lista</div>
+      </div>
+    </div>
+    <div class="cmp-banner wait" id="cmpBanner">Completá los dos modos para ver la diferencia en números concretos.</div>
+  </div>
+
+  <footer>
+    Demo interactiva creada para <b>Distribuidora Kenay</b> con fines de demostración comercial. No es la aplicación
+    real de WhatsApp ni tiene relación con WhatsApp&nbsp;LLC / Meta Platforms. Todas las imágenes de producto son
+    marcadores de posición y pueden reemplazarse por fotografías reales.
+  </footer>
+</div>
+
+<script>
+/* ========================================================================
+   DATOS DE FOTOS  (placeholders — reemplazar por { label, img:'...' })
+   ======================================================================== */
+const BG_JUNK = ['#c9ccd1','#bcae9e','#b7c3b0','#c2c9d6','#d0c3c3','#b9c7c9'];
+const JUNK_EMO = ['🤳','🍔','🐈','🚗','🌆','🧾','👵','🎂','🏖️','🛒','📄','🌧️','🍺','🪴','👟','🌮','🚪','💡','🧴','📦','🛏️','🧦'];
+const JUNK = Array.from({length:28},(_,i)=>({emoji:JUNK_EMO[i%JUNK_EMO.length], bg:BG_JUNK[i%BG_JUNK.length]}));
+
+const CARATULAS = [
+  ['¡BUEN DÍA!','#f2b134'],['OFERTAS DE HOY','#e88f2a'],['NOVEDADES','#f2c14e'],
+  ['HORARIOS','#e0a838'],['ENVÍO SIN CARGO','#f2b134'],['¡GRACIAS!','#e88f2a']
+].map(([label,bg])=>({emoji:'📋',label,bg}));
+
+const PAPAS = [
+  ['Papas lisas','🥔','#e9932b'],['Papas onduladas','🍟','#f0a33c'],['Palitos salados','🥨','#e9932b'],
+  ['Nachos','🫓','#f0a33c'],['Conitos de maíz','🌽','#e9932b'],['Bastón de maíz','🍟','#f0a33c']
+].map(([label,emoji,bg])=>({emoji,label,bg}));
+
+const COPETIN = [
+  ['Maní con sal','🥜'],['Mix frutos secos','🌰'],['Aceitunas','🫒'],
+  ['Cubitos de queso','🧀'],['Chicharrón','🥓'],['Garrapiñada','🍯']
+].map(([label,emoji])=>({emoji,label,bg:'#b9863f'}));
+
+const CHISTES = [
+  ['😂'],['🤣'],['😅'],['🙃'],['😆'],['😹']
+].map((e,i)=>({emoji:e[0],label:'Placa '+(i+1),bg:'#aab7c4'}));
+
+const KENAY = [
+  {emoji:'🌅', label:'Saludo del día',           bg:'#ffcf5c'},
+  {emoji:'🥔', label:'Papas y snacks',           bg:'#f0a33c'},
+  {emoji:'🥜', label:'Copetín',                  bg:'#cf9247'},
+  {emoji:'📦', label:'Recordá tu pedido',        bg:'#7cb87c'},
+  {emoji:'🌙', label:'Carátula de cierre',       bg:'#6b7fe0'},
+];
+
+const FOLDERS_ANTES = [
+  {id:'camara',    name:'Cámara',            count:918, photos:JUNK},
+  {id:'caratulas', name:'Carátulas',         count:6,   photos:CARATULAS},
+  {id:'papas',     name:'Papas y Snacks',    count:12,  photos:PAPAS},
+  {id:'copetin',   name:'Copetín',           count:9,   photos:COPETIN},
+  {id:'chistes',   name:'Chistes y placas',  count:40,  photos:CHISTES},
+];
+const FOLDERS_DESPUES = [
+  {id:'kenay',     name:'Estados Kenay',     count:5,   photos:KENAY},
+  {id:'camara',    name:'Cámara',            count:918, photos:JUNK},
+  {id:'caratulas', name:'Carátulas',         count:6,   photos:CARATULAS},
+  {id:'chistes',   name:'Chistes y placas',  count:40,  photos:CHISTES},
+];
+
+const CHATS_FILLER = [
+  {n:'Proveedor Pepas',  m:'listo, mañana sale el pedido', t:'02:10', bg:'#8e9aa5'},
+  {n:'Reparto Norte',    m:'📷 Foto',                      t:'01:47', bg:'#6fa8dc'},
+  {n:'Mamá',             m:'andá a dormir 😅',             t:'00:22', bg:'#c98ea7'},
+  {n:'Depósito',         m:'quedan 3 pallets de gaseosa',  t:'Ayer',  bg:'#8bc98e'},
+];
+const STATUS_FILLER = [
+  {n:'Distribuidora San Juan', t:'Hoy, 6:05', bg:'#d98b3a'},
+  {n:'Carla mayorista',        t:'Hoy, 5:20', bg:'#7b8ee0'},
+  {n:'Depósito Central',       t:'Hoy, 4:10', bg:'#57a06a'},
+];
+
+/* SVG reutilizables */
+const SVG_CHECK = '<svg viewBox="0 0 24 24"><path d="M9 16.2l-4.2-4.2-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>';
+
+/* ========================================================================
+   ESTADO
+   ======================================================================== */
+const S = {
+  mode:null, taps:0, waTab:'estados',
+  folderId:'camara', selected:[], folderListOpen:false,
+  antesRounds:0, estadosReached:false,
+  results:{antes:null, despues:null}
+};
+
+const $ = id => document.getElementById(id);
+const LIGHT_SCREENS = ['picker','confirm','summary']; // fondo claro -> texto oscuro en statusbar
+
+function updateHud(){
+  $('tapN').textContent = S.taps;
+  $('tapWord').textContent = (S.taps === 1) ? 'toque' : 'toques';
+}
+function t(){ S.taps++; updateHud(); }
+
+function toast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>el.classList.remove('show'), 1700);
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>{
+    s.classList.toggle('active', s.id === 'scr-'+name);
+  });
+  $('viewport').dataset.light = LIGHT_SCREENS.includes(name) ? 'true' : 'false';
+}
+
+/* ---------- selección de modo ---------- */
+function chooseMode(m){
+  S.mode = m;
+  S.taps = 0;
+  S.antesRounds = 0;
+  S.selected = [];
+  S.folderListOpen = false;
+  S.estadosReached = false;
+  S.folderId = (m === 'antes') ? 'camara' : 'kenay';
+  S.waTab = (m === 'antes') ? 'chats' : 'estados';
+
+  $('gate').classList.add('hidden');
+  $('sim').classList.remove('hidden');
+  updateHud();
+  $('hudMode').textContent = (m === 'antes') ? 'Modo ANTES' : 'Modo DESPUÉS';
+
+  const time = (m === 'antes') ? '3:14' : '4:31';
+  $('sbTime').textContent = time;
+  $('lockTime').textContent = time;
+
+  $('lockNotif').classList.toggle('hidden', m !== 'despues');
+  $('lockNotif').classList.toggle('pulse', m === 'despues');
+  $('lockWA').classList.toggle('hidden', m === 'despues');
+  $('lockHint').classList.toggle('hidden', m === 'despues');
+  $('lockWA').classList.toggle('pulse', m === 'antes');
+
+  showScreen('lock');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function resetRun(){
+  $('sim').classList.add('hidden');
+  $('gate').classList.remove('hidden');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------- lock -> WhatsApp ---------- */
+function openFromLock(){
+  t();
+  S.waTab = (S.mode === 'antes') ? 'chats' : 'estados';
+  renderEstados();
+  showScreen('estados');
+}
+
+/* ---------- pestañas WhatsApp ---------- */
+function setTab(tab){
+  if(tab === 'llamadas'){ toast('En esta demo solo está activa la sección Estados.'); return; }
+  if(tab === S.waTab) return;
+  // el único toque que cuenta es pasar a Estados en el modo ANTES (paso real del proceso)
+  if(tab === 'estados' && S.mode === 'antes' && !S.estadosReached){
+    t();
+    S.estadosReached = true;
+  }
+  S.waTab = tab;
+  renderEstados();
+}
+
+function renderEstados(){
+  document.querySelectorAll('.wa-tab').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab === S.waTab);
+  });
+  const body = $('waBody');
+
+  if(S.waTab === 'chats'){
+    body.innerHTML = CHATS_FILLER.map(c=>`
+      <div class="chat-row" onclick="toast('Chat de ejemplo — no interactivo en la demo.')">
+        <div class="avatar" style="background:${c.bg}">${c.n[0]}</div>
+        <div class="cr-main">
+          <div class="cr-name">${c.n}</div>
+          <div class="cr-msg">${c.m}</div>
+        </div>
+        <div class="cr-time">${c.t}</div>
+      </div>`).join('');
+    return;
+  }
+
+  // Estados
+  body.innerHTML = `
+    <div class="mystatus" onclick="openMyStatus()">
+      <div class="ms-av">
+        <div class="avatar" style="background:#0a7d68">👩</div>
+        <div class="ms-plus"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg></div>
+      </div>
+      <div class="ms-txt">
+        <div class="t1">Mi estado</div>
+        <div class="t2">Toca para añadir una novedad</div>
+      </div>
+    </div>
+    <div class="status-label">Novedades recientes</div>
+    ${STATUS_FILLER.map(s=>`
+      <div class="status-row" onclick="toast('Estado de contacto de ejemplo — no interactivo.')">
+        <div class="ring"><div class="avatar" style="background:${s.bg}">${s.n[0]}</div></div>
+        <div><div class="sr-name">${s.n}</div><div class="sr-time">${s.t}</div></div>
+      </div>`).join('')}
+  `;
+}
+
+/* ---------- abrir selector de galería ---------- */
+function openMyStatus(){
+  t();
+  S.selected = [];
+  S.folderListOpen = false;
+  S.folderId = (S.mode === 'antes') ? 'camara' : 'kenay';
+  buildPicker();
+  showScreen('picker');
+}
+
+function getFolders(){ return S.mode === 'antes' ? FOLDERS_ANTES : FOLDERS_DESPUES; }
+function getFolder(){ return getFolders().find(f => f.id === S.folderId); }
+
+function buildPicker(){
+  renderFolderChip();
+  renderFolderList();
+  renderGrid();
+  updateFab();
+}
+
+function renderFolderChip(){
+  const f = getFolder();
+  $('folderName').textContent = f.name;
+  $('folderCount').textContent = f.count.toLocaleString('es-AR') + ' elementos';
+  const chip = $('folderChip');
+  chip.classList.toggle('open', S.folderListOpen);
+  // pista visual sutil (sin texto): en ANTES invita a abrir carpetas mientras no haya selección
+  chip.classList.toggle('hint', S.mode === 'antes' && S.selected.length === 0 && !S.folderListOpen);
+}
+
+function toggleFolderList(){
+  if(S.mode === 'despues'){
+    toast('La carpeta del día ya está seleccionada.');
+    return;
+  }
+  const opening = !S.folderListOpen;
+  S.folderListOpen = opening;
+  if(opening) t(); // tocar el desplegable ES un paso del proceso en ANTES
+  renderFolderChip();
+  renderFolderList();
+}
+
+function renderFolderList(){
+  const el = $('folderList');
+  el.classList.toggle('hidden', !S.folderListOpen);
+  if(!S.folderListOpen) return;
+  el.innerHTML = getFolders().map(f=>`
+    <button class="fl-row" onclick="pickFolder('${f.id}')">
+      <span class="fl-thumb" style="background:${f.photos[0].bg || '#ccc'}">${f.photos[0].img ? '' : (f.photos[0].emoji || '')}</span>
+      <span class="fl-meta"><b>${f.name}</b><small>${f.count.toLocaleString('es-AR')} elementos</small></span>
+      ${f.id === S.folderId ? '<span class="fl-cur">✓</span>' : ''}
+    </button>`).join('');
+}
+
+function pickFolder(id){
+  if(S.mode === 'antes') t(); // elegir la carpeta destino = otro paso del proceso
+  S.folderId = id;
+  S.folderListOpen = false;
+  S.selected = [];
+  buildPicker();
+}
+
+function renderGrid(){
+  const f = getFolder();
+  $('gridNote').textContent = f.count.toLocaleString('es-AR') + ' elementos';
+  const multi = S.mode === 'despues';
+  const hintAll = multi && S.selected.length === 0; // en DESPUÉS: los checks laten sutilmente
+  $('grid').innerHTML = f.photos.map((p,i)=>{
+    const pos = S.selected.indexOf(i);
+    const isSel = pos > -1;
+    const bgStyle = p.img
+      ? `background-image:url('${p.img}')`
+      : `background:${p.bg || '#ccc'}`;
+    const badge = isSel ? (multi ? (pos+1) : SVG_CHECK) : '';
+    return `<button class="tile${isSel ? ' sel' : ''}${hintAll ? ' hint' : ''}" style="${bgStyle}" onclick="togglePhoto(${i})">
+      ${p.img ? '' : `<span class="emo">${p.emoji || ''}</span>`}
+      ${p.label ? `<span class="tlab">${p.label}</span>` : ''}
+      <span class="chk">${badge}</span>
+    </button>`;
+  }).join('');
+}
+
+function togglePhoto(i){
+  const multi = S.mode === 'despues';
+  if(multi){
+    const pos = S.selected.indexOf(i);
+    if(pos > -1){ S.selected.splice(pos,1); }
+    else{
+      if(S.selected.length >= 5){ toast('Ya elegiste las 5 piezas del día.'); return; }
+      S.selected.push(i);
+    }
+  }else{
+    S.selected = [i]; // ANTES: una sola foto por envío, sin multi-selección
+  }
+  t();
+  renderGrid();
+  renderFolderChip();
+  updateFab();
+}
+
+function updateFab(){
+  const n = S.selected.length;
+  $('fab').disabled = n === 0;
+  const badge = $('fabBadge');
+  if(S.mode === 'despues' && n > 0){
+    badge.textContent = n;
+    badge.classList.remove('hidden');
+  }else{
+    badge.classList.add('hidden');
+  }
+}
+
+function pickerBack(){
+  toast('Volvé con los controles de la pantalla.');
+}
+
+/* ---------- enviar -> vista previa ---------- */
+function sendFab(){
+  if(S.selected.length === 0) return;
+  t();
+  buildPreview();
+  showScreen('preview');
+}
+
+function buildPreview(){
+  const f = getFolder();
+  const imgs = S.selected.map(i => f.photos[i]);
+  const main = imgs[0];
+  const mainStyle = main.img ? `background-image:url('${main.img}')` : `background:${main.bg}`;
+  $('previewBody').innerHTML = `
+    <div class="pv-main" style="${mainStyle}">
+      ${main.img ? '' : `<span class="pv-emo">${main.emoji}</span>`}
+      ${imgs.length > 1 ? `<span class="pv-count">1/${imgs.length}</span>` : ''}
+      ${main.label ? `<span class="pv-lab">${main.label}</span>` : ''}
+    </div>
+    ${imgs.length > 1 ? `<div class="pv-strip">${imgs.map((p,k)=>`
+      <span class="pv-th" style="${p.img ? `background-image:url('${p.img}')` : `background:${p.bg}`}">
+        ${p.img ? '' : (p.emoji || '')}<b>${k+1}</b>
+      </span>`).join('')}</div>` : ''}
+  `;
+}
+
+function previewBack(){
+  t(); // "opción de volver atrás"
+  showScreen('picker');
+}
+
+/* ---------- compartir -> confirmación ---------- */
+function share(){
+  t();
+  buildConfirm();
+  showScreen('confirm');
+}
+
+function buildConfirm(){
+  const sub = $('cfSub');
+  const btn = $('cfBtn');
+  document.querySelector('.cf-circle').style.animation = 'none';
+  void document.querySelector('.cf-circle').offsetWidth;
+  document.querySelector('.cf-circle').style.animation = '';
+
+  if(S.mode === 'despues'){
+    sub.textContent = 'Las 5 piezas del día ya están en tu Estado. Tus contactos pueden verlas por 24 h.';
+    btn.textContent = 'Listo';
+    btn.onclick = () => { t(); finish('despues'); };
+    return;
+  }
+  const posted = S.antesRounds + 1;
+  sub.textContent = `Pieza ${posted} de 4 publicada · llevás ${S.taps} toques.`;
+  if(posted < 4){
+    btn.textContent = 'Continuar';
+    btn.onclick = antesContinue;
+  }else{
+    btn.textContent = 'Ver resumen';
+    btn.onclick = () => { t(); S.antesRounds = 4; finish('antes'); };
+  }
+}
+
+function antesContinue(){
+  t();
+  S.antesRounds++;
+  S.selected = [];
+  buildPicker();
+  showScreen('picker');
+  toast(`Pieza ${S.antesRounds + 1} de 4`);
+}
+
+/* ---------- resumen + comparación ---------- */
+function finish(mode){
+  S.results[mode] = S.taps;
+  buildSummary(mode);
+  showScreen('summary');
+  renderComparison();
+}
+
+function buildSummary(mode){
+  const other = mode === 'antes' ? 'despues' : 'antes';
+  let inner;
+  if(mode === 'antes'){
+    inner = `
+      <div class="sm-emoji">😮‍💨</div>
+      <div class="sm-title">Terminaste</div>
+      <ul class="sm-list">
+        <li>Publicaste <b>4 piezas</b></li>
+        <li><b>${S.results.antes} toques</b> en total</li>
+        <li><b>4</b> cambios de carpeta</li>
+        <li>Todo entre <b>918 fotos</b> de la cámara · 3:14 AM</li>
+      </ul>`;
+  }else{
+    inner = `
+      <div class="sm-emoji">✨</div>
+      <div class="sm-title">Listo</div>
+      <ul class="sm-list">
+        <li>Publicaste las <b>5 piezas</b> del día</li>
+        <li>Publicar en sí: <b>2 toques</b> (enviar + compartir)</li>
+        <li><b>${S.results.despues} toques</b> en total</li>
+        <li><b>0</b> cambios de carpeta · carpeta ya armada · 4:31 AM</li>
+      </ul>`;
+  }
+  $('summaryBody').innerHTML = inner + `
+    <div class="sm-actions">
+      <button class="primary" onclick="scrollToCmp()">Ver comparación ↓</button>
+      <button onclick="chooseMode('${mode}')">Repetir este modo</button>
+      <button onclick="chooseMode('${other}')">Probar el modo ${other === 'antes' ? 'ANTES' : 'DESPUÉS'}</button>
+    </div>`;
+}
+
+function scrollToCmp(){
+  $('cmp').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function renderComparison(){
+  const a = S.results.antes, d = S.results.despues;
+  $('cmpA').innerHTML = (a == null) ? '—' : `${a} <small>toques</small>`;
+  $('cmpD').innerHTML = (d == null) ? '—' : `${d} <small>toques</small>`;
+  const banner = $('cmpBanner');
+  if(a != null && d != null){
+    banner.classList.remove('wait');
+    banner.innerHTML = `Con el sistema Kenay: <b>${a - d} toques menos</b>, <b>0</b> cambios de carpeta y sin revisar 918 fotos a las 3 de la mañana.`;
+  }else{
+    banner.classList.add('wait');
+    banner.textContent = 'Completá los dos modos para ver la diferencia en números concretos.';
+  }
+}
+
+renderComparison();
+</script>
