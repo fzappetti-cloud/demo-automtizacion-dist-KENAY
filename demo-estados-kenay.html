@@ -364,13 +364,18 @@
   .sm-title{font-size:19px;font-weight:700;margin-top:4px}
   .sm-list{list-style:none;padding:0;margin:14px 0 4px;font-size:13px;line-height:1.9;color:#2b3942}
   .sm-list b{color:var(--ink)}
-  .sm-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px;width:100%}
+  .sm-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px;width:100%}
   .sm-actions button{
     border:1px solid var(--line);background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;
     padding:10px;border-radius:10px;cursor:pointer;
   }
-  .sm-actions button.primary{background:var(--wa-green);color:#fff;border-color:var(--wa-green)}
   .sm-actions button:active{filter:brightness(.97)}
+  .sm-actions button.hero{
+    background:var(--wa-teal);border-color:var(--wa-teal);color:#04261a;font-weight:800;font-size:14px;
+    padding:14px 12px;box-shadow:0 0 0 0 rgba(37,211,102,.6);animation:switchpulse 2.2s ease-out infinite;
+  }
+  .sm-actions button.hero:active{transform:scale(.98)}
+  .sm-actions button.mini{font-size:11.5px;font-weight:500;color:var(--muted);padding:8px;border-color:transparent;background:none}
 
   /* ---------- toast ---------- */
   #toast{
@@ -1109,11 +1114,14 @@ function buildSummary(mode){
         <li><b>0</b> búsquedas · carpeta lista · <b>4:31 AM</b></li>
       </ul>`;
   }
+  const hero = mode === 'antes'
+    ? '✨ Ver cómo sería con el sistema →'
+    : '↺ Ver cómo es hoy, a mano →';
   $('summaryBody').innerHTML = inner + `
     <div class="sm-actions">
-      <button class="primary" onclick="scrollToCmp()">Ver comparación ↓</button>
-      <button onclick="chooseMode('${mode}')">Repetir este modo</button>
-      <button onclick="chooseMode('${other}')">Probar el modo ${other === 'antes' ? 'ANTES' : 'DESPUÉS'}</button>
+      <button class="hero" onclick="chooseMode('${other}')">${hero}</button>
+      <button onclick="scrollToCmp()">Ver la comparación ↓</button>
+      <button class="mini" onclick="chooseMode('${mode}')">Repetir este modo</button>
     </div>`;
 }
 
