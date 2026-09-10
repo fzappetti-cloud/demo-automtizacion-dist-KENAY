@@ -18,11 +18,17 @@ npx -y http-server -p 4173 -c-1
 
 y entrar a `http://localhost:4173/demo-estados-kenay.html`.
 
-## Reemplazar los placeholders por fotos reales
+## Fotos
 
-Las imágenes de producto son bloques de color + emoji. En el bloque `DATOS DE FOTOS`
-del `<script>`, cambiar `{ emoji, label, bg }` por `{ label, img: 'ruta/o/url.jpg' }`.
-`renderTile()` y `buildPreview()` ya soportan la propiedad `img`.
+Las fotos reales de Kenay están en `./img` (`01-saludo`, `02/03-chiste`, `prod-02..prod-20`).
+Para cambiarlas, reemplazá los archivos con los mismos nombres, o editá las rutas en el
+bloque `DATOS DE FOTOS` del `<script>`.
+
+- **ANTES**: todo mezclado en una sola "Cámara" (fotos reales + relleno para dar volumen).
+- **DESPUÉS**: el sistema deja la carpeta "Estados Kenay" con 20 piezas ordenadas
+  (buen día · 2 chistes · 16 productos · cierre) y un botón "Seleccionar las 20".
+- El **cierre** es una placa generada (gradiente + ▶). Para usar un video/enlace real,
+  cambiá `CIERRE` por `{ img:'img/cierre.jpg', label:'Cierre', link:'https://...' }`.
 
 ## Aviso
 

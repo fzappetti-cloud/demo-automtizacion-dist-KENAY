@@ -250,6 +250,17 @@
   .fl-meta small{font-size:11px;color:var(--muted)}
   .fl-cur{color:var(--wa-teal);font-weight:700}
 
+  .sel-all-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:8px 12px;background:#e7f4ec;border-bottom:1px solid #cfe9d6;font-size:11.5px;color:#1e7d34;
+  }
+  .sel-all-bar[hidden]{display:none}
+  .sel-all-bar button{
+    border:1px solid var(--wa-teal);background:var(--wa-teal);color:#fff;font-family:inherit;font-weight:700;
+    font-size:11.5px;padding:6px 12px;border-radius:999px;cursor:pointer;
+  }
+  .sel-all-bar button:active{filter:brightness(.95)}
+
   .grid-note{font-size:11px;color:var(--muted);padding:7px 12px 3px;background:#fafafa}
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:0 0 4px;flex:1;overflow-y:auto;align-content:start;background:#fafafa}
   .tile{
@@ -271,6 +282,11 @@
   .tile.sel .chk svg{width:13px;height:13px;fill:#fff}
   .tile.sel{outline:3px solid var(--wa-teal);outline-offset:-3px}
   .tile.hint .chk{animation:softpulse 1.8s ease-out infinite}
+  .tile.cierre{color:#eafff5}
+  .tile .cierre-play{
+    width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.9);color:#0b3d2e;
+    display:grid;place-items:center;font-size:11px;padding-left:2px;
+  }
 
   .fab{
     position:absolute;right:16px;bottom:46px;width:52px;height:52px;border-radius:50%;border:none;
@@ -477,6 +493,10 @@
             <span class="pk-right" id="folderCount">918 elementos</span>
           </div>
           <div class="folder-list hidden" id="folderList"></div>
+          <div class="sel-all-bar" id="selAllBar" hidden>
+            <span>Carpeta del día</span>
+            <button id="selAllBtn" onclick="selectAll()">Seleccionar las 20</button>
+          </div>
           <div class="grid-note" id="gridNote"></div>
           <div class="grid" id="grid"></div>
           <button class="fab" id="fab" disabled onclick="sendFab()" aria-label="Enviar">
@@ -533,12 +553,12 @@
       <div class="cmp-card a">
         <div class="cmp-tag">ANTES</div>
         <div class="cmp-num" id="cmpA">—</div>
-        <div class="cmp-meta">4 publicaciones separadas · 4 cambios de carpeta · entre 918 fotos</div>
+        <div class="cmp-meta">elegir a mano entre 342 fotos mezcladas · sin orden · sin cierre</div>
       </div>
       <div class="cmp-card d">
         <div class="cmp-tag">DESPUÉS</div>
         <div class="cmp-num" id="cmpD">—</div>
-        <div class="cmp-meta">5 piezas · 0 cambios de carpeta · carpeta del día lista</div>
+        <div class="cmp-meta">20 piezas ya ordenadas por el sistema · buen día + chistes + productos + cierre</div>
       </div>
     </div>
     <div class="cmp-banner wait" id="cmpBanner">Completá los dos modos para ver la diferencia en números concretos.</div>
@@ -546,58 +566,73 @@
 
   <footer>
     Demo interactiva creada para <b>Distribuidora Kenay</b> con fines de demostración comercial. No es la aplicación
-    real de WhatsApp ni tiene relación con WhatsApp&nbsp;LLC / Meta Platforms. Todas las imágenes de producto son
-    marcadores de posición y pueden reemplazarse por fotografías reales.
+    real de WhatsApp ni tiene relación con WhatsApp&nbsp;LLC / Meta Platforms. Las fotos son materiales reales de
+    Kenay; la placa de “cierre” es un marcador de posición para un video o enlace de pedidos.
   </footer>
 </div>
 
 <script>
 /* ========================================================================
-   DATOS DE FOTOS  (placeholders — reemplazar por { label, img:'...' })
+   DATOS DE FOTOS
+   ------------------------------------------------------------------------
+   Fotos reales de Distribuidora Kenay en la carpeta ./img
+   - saludo + 2 chistes = las 3 que van al inicio del Estado
+   - prod-02..prod-20  = fotos de productos
+   Para cambiarlas: reemplazá los archivos de ./img (mismos nombres) o
+   editá las rutas de abajo. renderTile() y buildPreview() ya usan `img`.
+   El "cierre" es una placa generada (gradiente + ▶); reemplazala por una
+   miniatura de video real poniéndole { img:'img/cierre.jpg', link:'...' }.
    ======================================================================== */
-const BG_JUNK = ['#c9ccd1','#bcae9e','#b7c3b0','#c2c9d6','#d0c3c3','#b9c7c9'];
-const JUNK_EMO = ['🤳','🍔','🐈','🚗','🌆','🧾','👵','🎂','🏖️','🛒','📄','🌧️','🍺','🪴','👟','🌮','🚪','💡','🧴','📦','🛏️','🧦'];
-const JUNK = Array.from({length:28},(_,i)=>({emoji:JUNK_EMO[i%JUNK_EMO.length], bg:BG_JUNK[i%BG_JUNK.length]}));
+const SALUDO  = { img:'img/01-saludo.jpg', label:'Buen día' };
+const CHISTE1 = { img:'img/02-chiste.jpg', label:'Chiste' };
+const CHISTE2 = { img:'img/03-chiste.jpg', label:'Chiste' };
 
-const CARATULAS = [
-  ['¡BUEN DÍA!','#f2b134'],['OFERTAS DE HOY','#e88f2a'],['NOVEDADES','#f2c14e'],
-  ['HORARIOS','#e0a838'],['ENVÍO SIN CARGO','#f2b134'],['¡GRACIAS!','#e88f2a']
-].map(([label,bg])=>({emoji:'📋',label,bg}));
+const PRODUCTS = Array.from({length:19}, (_,i)=>{
+  const n = String(i + 2).padStart(2, '0');      // prod-02 .. prod-20
+  return { img:`img/prod-${n}.jpg` };
+});
 
-const PAPAS = [
-  ['Papas lisas','🥔','#e9932b'],['Papas onduladas','🍟','#f0a33c'],['Palitos salados','🥨','#e9932b'],
-  ['Nachos','🫓','#f0a33c'],['Conitos de maíz','🌽','#e9932b'],['Bastón de maíz','🍟','#f0a33c']
-].map(([label,emoji,bg])=>({emoji,label,bg}));
+const CIERRE = { kind:'cierre', label:'Cierre del día', sub:'video motivador · hacé tu pedido' };
 
-const COPETIN = [
-  ['Maní con sal','🥜'],['Mix frutos secos','🌰'],['Aceitunas','🫒'],
-  ['Cubitos de queso','🧀'],['Chicharrón','🥓'],['Garrapiñada','🍯']
-].map(([label,emoji])=>({emoji,label,bg:'#b9863f'}));
-
-const CHISTES = [
-  ['😂'],['🤣'],['😅'],['🙃'],['😆'],['😹']
-].map((e,i)=>({emoji:e[0],label:'Placa '+(i+1),bg:'#aab7c4'}));
-
-const KENAY = [
-  {emoji:'🌅', label:'Saludo del día',           bg:'#ffcf5c'},
-  {emoji:'🥔', label:'Papas y snacks',           bg:'#f0a33c'},
-  {emoji:'🥜', label:'Copetín',                  bg:'#cf9247'},
-  {emoji:'📦', label:'Recordá tu pedido',        bg:'#7cb87c'},
-  {emoji:'🌙', label:'Carátula de cierre',       bg:'#6b7fe0'},
+/* Fotos personales de relleno (bloque de color + emoji) para dar volumen
+   al "todo junto" del modo ANTES. */
+const BG_JUNK = [
+  'linear-gradient(135deg,#aeb9c4,#d9e0e7)','linear-gradient(135deg,#c7bda9,#e6ddc9)',
+  'linear-gradient(135deg,#a9c0b3,#d5e4da)','linear-gradient(135deg,#b3bcd0,#dbe0ec)',
+  'linear-gradient(135deg,#cdbcbc,#e8dada)','linear-gradient(135deg,#a8c3c7,#d3e6e8)',
+  'linear-gradient(135deg,#c9c2b0,#e7e1d2)','linear-gradient(135deg,#b7c3cc,#dde5ea)'
 ];
+const JUNK_EMO = ['🤳','🍔','🐈','🚗','🌆','🧾','👵','🎂','🏖️','🛒','📄','🌧️','🍺','🪴','👟','🌮','🚪','💡','🧴','📦','🛏️','🧦','🧀','🪟','🐕','☕','🚿','🧢','🪑','🌳'];
+const mkJunk = n => Array.from({length:n}, (_,i)=>({ emoji:JUNK_EMO[(i*7+3)%JUNK_EMO.length], bg:BG_JUNK[i%BG_JUNK.length] }));
+
+/* Baraja simple y estable (para que las fotos buenas queden desperdigadas). */
+function shuffle(arr){
+  const a = arr.slice(); let seed = 7;
+  for (let i = a.length - 1; i > 0; i--){
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const j = seed % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* MODO ANTES · "todo junto": una sola Cámara con TODO mezclado + relleno */
+const CAMARA_TODO = shuffle([ SALUDO, CHISTE1, CHISTE2, ...PRODUCTS, ...mkJunk(96) ]);
+
+/* MODO DESPUÉS · lo que el sistema deja filtrado y en orden:
+   1 buen día · 2 y 3 chistes · 4-19 productos · 20 cierre  = 20 piezas */
+const KENAY_SET = [ SALUDO, CHISTE1, CHISTE2, ...PRODUCTS.slice(0, 16), CIERRE ];
 
 const FOLDERS_ANTES = [
-  {id:'camara',    name:'Cámara',            count:918, photos:JUNK},
-  {id:'caratulas', name:'Carátulas',         count:6,   photos:CARATULAS},
-  {id:'papas',     name:'Papas y Snacks',    count:12,  photos:PAPAS},
-  {id:'copetin',   name:'Copetín',           count:9,   photos:COPETIN},
-  {id:'chistes',   name:'Chistes y placas',  count:40,  photos:CHISTES},
+  {id:'camara',    name:'Cámara',                count:342, photos:CAMARA_TODO},
+  {id:'descargas', name:'Descargas',             count:56,  photos:mkJunk(44)},
+  {id:'wa',        name:'WhatsApp Images',       count:203, photos:mkJunk(64)},
+  {id:'capturas',  name:'Capturas de pantalla',  count:89,  photos:mkJunk(52)},
 ];
 const FOLDERS_DESPUES = [
-  {id:'kenay',     name:'Estados Kenay',     count:5,   photos:KENAY},
-  {id:'camara',    name:'Cámara',            count:918, photos:JUNK},
-  {id:'caratulas', name:'Carátulas',         count:6,   photos:CARATULAS},
-  {id:'chistes',   name:'Chistes y placas',  count:40,  photos:CHISTES},
+  {id:'kenay',     name:'Estados Kenay',         count:20,  photos:KENAY_SET},
+  {id:'camara',    name:'Cámara',                count:342, photos:CAMARA_TODO},
+  {id:'wa',        name:'WhatsApp Images',       count:203, photos:mkJunk(64)},
 ];
 
 const CHATS_FILLER = [
@@ -807,6 +842,7 @@ function buildPicker(){
   renderFolderChip();
   renderFolderList();
   renderGrid();
+  renderSelAll();
   updateFab();
 }
 
@@ -814,20 +850,13 @@ function renderFolderChip(){
   const f = getFolder();
   $('folderName').textContent = f.name;
   $('folderCount').textContent = f.count.toLocaleString('es-AR') + ' elementos';
-  const chip = $('folderChip');
-  chip.classList.toggle('open', S.folderListOpen);
-  // pista visual sutil (sin texto): en ANTES invita a abrir carpetas mientras no haya selección
-  chip.classList.toggle('hint', S.mode === 'antes' && S.selected.length === 0 && !S.folderListOpen);
+  $('folderChip').classList.toggle('open', S.folderListOpen);
 }
 
 function toggleFolderList(){
-  if(S.mode === 'despues'){
-    toast('La carpeta del día ya está seleccionada.');
-    return;
-  }
   const opening = !S.folderListOpen;
   S.folderListOpen = opening;
-  if(opening) t(); // tocar el desplegable ES un paso del proceso en ANTES
+  if(opening) t();
   renderFolderChip();
   renderFolderList();
 }
@@ -836,60 +865,92 @@ function renderFolderList(){
   const el = $('folderList');
   el.classList.toggle('hidden', !S.folderListOpen);
   if(!S.folderListOpen) return;
-  el.innerHTML = getFolders().map(f=>`
-    <button class="fl-row" onclick="pickFolder('${f.id}')">
-      <span class="fl-thumb" style="background:${f.photos[0].bg || '#ccc'}">${f.photos[0].img ? '' : (f.photos[0].emoji || '')}</span>
+  el.innerHTML = getFolders().map(f=>{
+    const th = f.photos[0];
+    const thumb = th.img ? `background-image:url('${th.img}');background-size:cover` : `background:${th.bg || '#ccc'}`;
+    return `<button class="fl-row" onclick="pickFolder('${f.id}')">
+      <span class="fl-thumb" style="${thumb}">${th.img ? '' : (th.emoji || '')}</span>
       <span class="fl-meta"><b>${f.name}</b><small>${f.count.toLocaleString('es-AR')} elementos</small></span>
       ${f.id === S.folderId ? '<span class="fl-cur">✓</span>' : ''}
-    </button>`).join('');
+    </button>`;
+  }).join('');
 }
 
 function pickFolder(id){
-  if(S.mode === 'antes') t(); // elegir la carpeta destino = otro paso del proceso
+  t();
   S.folderId = id;
   S.folderListOpen = false;
   S.selected = [];
   buildPicker();
 }
 
+/* "Seleccionar todo": atajo real de la galería de Samsung. Solo en la carpeta
+   que armó el sistema (DESPUÉS): un toque elige las 20 piezas ya ordenadas. */
+function renderSelAll(){
+  const show = S.mode === 'despues' && S.folderId === 'kenay';
+  $('selAllBar').hidden = !show;
+  if(show){
+    const total = getFolder().photos.length;
+    const all = S.selected.length === total;
+    $('selAllBtn').textContent = all ? 'Quitar selección' : `Seleccionar las ${total}`;
+  }
+}
+function selectAll(){
+  const total = getFolder().photos.length;
+  S.selected = (S.selected.length === total) ? [] : getFolder().photos.map((_,i)=>i);
+  t();
+  renderGrid();
+  renderSelAll();
+  updateFab();
+}
+
 function renderGrid(){
   const f = getFolder();
-  $('gridNote').textContent = f.count.toLocaleString('es-AR') + ' elementos';
-  // pista visual sutil: los checks laten cuando todavía no hay nada elegido en una carpeta del rubro
-  const hintAll = S.selected.length === 0 && S.folderId !== 'camara';
+  $('gridNote').textContent = (S.mode === 'despues' && S.folderId === 'kenay')
+    ? `${f.count} elementos · ordenados para hoy`
+    : `${f.count.toLocaleString('es-AR')} elementos`;
+  // en la carpeta del sistema, los checks laten suavemente mientras no haya nada elegido
+  const hintAll = S.mode === 'despues' && S.folderId === 'kenay' && S.selected.length === 0;
   $('grid').innerHTML = f.photos.map((p,i)=>{
     const pos = S.selected.indexOf(i);
     const isSel = pos > -1;
-    const bgStyle = p.img
-      ? `background-image:url('${p.img}')`
-      : `background:${p.bg || '#ccc'}`;
-    const badge = isSel ? (pos + 1) : '';   // número de orden = multi-selección
-    return `<button class="tile${isSel ? ' sel' : ''}${hintAll ? ' hint' : ''}" style="${bgStyle}" onclick="togglePhoto(${i})">
-      ${p.img ? '' : `<span class="emo">${p.emoji || ''}</span>`}
+    const isCierre = p.kind === 'cierre';
+    const bgStyle = isCierre
+      ? 'background:linear-gradient(135deg,#0b3d2e,#12664a)'
+      : (p.img ? `background-image:url('${p.img}')` : `background:${p.bg || '#ccc'}`);
+    const inner = isCierre
+      ? `<span class="cierre-play">▶</span>`
+      : (p.img ? '' : `<span class="emo">${p.emoji || ''}</span>`);
+    const badge = isSel ? (pos + 1) : '';
+    return `<button class="tile${isSel ? ' sel' : ''}${hintAll ? ' hint' : ''}${isCierre ? ' cierre' : ''}" style="${bgStyle}" onclick="togglePhoto(${i})">
+      ${inner}
       ${p.label ? `<span class="tlab">${p.label}</span>` : ''}
       <span class="chk">${badge}</span>
     </button>`;
   }).join('');
 }
 
-// Multi-selección en ambos modos (como la galería real del teléfono).
-// La fricción del modo ANTES es que las piezas están repartidas en 4 carpetas
-// distintas y no se puede seleccionar entre carpetas: hay que publicar una por una.
+// Multi-selección como la galería real. La fricción del modo ANTES es que
+// las piezas están mezcladas entre cientos de fotos sueltas, sin orden.
 function togglePhoto(i){
   const pos = S.selected.indexOf(i);
   if(pos > -1){
     S.selected.splice(pos, 1);
   }else{
-    if(S.mode === 'despues' && S.selected.length >= 5){
-      toast('Ya elegiste las 5 piezas del día.');
-      return;
-    }
+    const cap = S.mode === 'despues' ? getFolder().photos.length : 999;
+    if(S.selected.length >= cap){ return; }
     S.selected.push(i);
   }
   t();
   renderGrid();
-  renderFolderChip();
+  renderSelAll();
   updateFab();
+}
+
+/* cuántas de las elegidas son piezas reales (foto o cierre), no relleno */
+function realCount(){
+  const ph = getFolder().photos;
+  return S.selected.filter(i => ph[i] && (ph[i].img || ph[i].kind === 'cierre')).length;
 }
 
 function updateFab(){
@@ -912,21 +973,27 @@ function sendFab(){
   go('preview');
 }
 
+function tileBg(p){
+  if(p.kind === 'cierre') return 'background:linear-gradient(135deg,#0b3d2e,#12664a)';
+  return p.img ? `background-image:url('${p.img}')` : `background:${p.bg || '#ccc'}`;
+}
+function tileGlyph(p){
+  if(p.kind === 'cierre') return '▶';
+  return p.img ? '' : (p.emoji || '');
+}
+
 function buildPreview(){
   const f = getFolder();
   const imgs = S.selected.map(i => f.photos[i]);
   const main = imgs[0];
-  const mainStyle = main.img ? `background-image:url('${main.img}')` : `background:${main.bg}`;
   $('previewBody').innerHTML = `
-    <div class="pv-main" style="${mainStyle}">
-      ${main.img ? '' : `<span class="pv-emo">${main.emoji}</span>`}
+    <div class="pv-main" style="${tileBg(main)}">
+      <span class="pv-emo">${tileGlyph(main)}</span>
       ${imgs.length > 1 ? `<span class="pv-count">1/${imgs.length}</span>` : ''}
-      ${main.label ? `<span class="pv-lab">${main.label}</span>` : ''}
+      ${main.label ? `<span class="pv-lab">${main.label}${main.sub ? ' · ' + main.sub : ''}</span>` : ''}
     </div>
     ${imgs.length > 1 ? `<div class="pv-strip">${imgs.map((p,k)=>`
-      <span class="pv-th" style="${p.img ? `background-image:url('${p.img}')` : `background:${p.bg}`}">
-        ${p.img ? '' : (p.emoji || '')}<b>${k+1}</b>
-      </span>`).join('')}</div>` : ''}
+      <span class="pv-th" style="${tileBg(p)}">${tileGlyph(p)}<b>${k+1}</b></span>`).join('')}</div>` : ''}
   `;
 }
 
@@ -945,37 +1012,21 @@ function buildConfirm(){
   void document.querySelector('.cf-circle').offsetWidth;
   document.querySelector('.cf-circle').style.animation = '';
 
-  if(S.mode === 'despues'){
-    sub.textContent = 'Las 5 piezas del día ya están en tu Estado. Tus contactos pueden verlas por 24 h.';
-    btn.textContent = 'Listo';
-    btn.onclick = () => { t(); finish('despues'); };
-    return;
-  }
-  const posted = S.antesRounds + 1;
   const n = S.selected.length;
-  sub.textContent = `Publicación ${posted} de 4 · ${n} ${n === 1 ? 'pieza' : 'piezas'} · llevás ${S.taps} toques.`;
-  if(posted < 4){
-    btn.textContent = 'Seguir con la próxima carpeta';
-    btn.onclick = antesContinue;
+  if(S.mode === 'despues'){
+    sub.textContent = `Las ${n} piezas del día ya están en tu Estado, en orden. Tus contactos las ven por 24 h.`;
   }else{
-    btn.textContent = 'Ver resumen';
-    btn.onclick = () => { t(); S.antesPieces += S.selected.length; S.antesRounds = 4; finish('antes'); };
+    sub.textContent = `Subiste ${n} ${n === 1 ? 'foto' : 'fotos'} sueltas. Llevás ${S.taps} toques.`;
   }
-}
-
-function antesContinue(){
-  t();
-  S.antesPieces += S.selected.length;
-  S.antesRounds++;
-  S.selected = [];
-  S.nav = ['lock', 'estados'];
-  render('picker');
-  toast(`Publicación ${S.antesRounds + 1} de 4 — buscá en otra carpeta`);
+  btn.textContent = 'Listo';
+  btn.onclick = () => { t(); finish(S.mode); };
 }
 
 /* ---------- resumen + comparación ---------- */
 function finish(mode){
   S.results[mode] = S.taps;
+  S.resPieces = S.resPieces || {};
+  S.resPieces[mode] = realCount();
   S.nav = [];
   buildSummary(mode);
   render('summary');
@@ -984,26 +1035,26 @@ function finish(mode){
 
 function buildSummary(mode){
   const other = mode === 'antes' ? 'despues' : 'antes';
+  const pieces = (S.resPieces && S.resPieces[mode]) || 0;
   let inner;
   if(mode === 'antes'){
     inner = `
       <div class="sm-emoji">😮‍💨</div>
       <div class="sm-title">Terminaste</div>
       <ul class="sm-list">
-        <li>Publicaste <b>${S.antesPieces} ${S.antesPieces === 1 ? 'pieza' : 'piezas'}</b> en <b>4 publicaciones</b> separadas</li>
+        <li>Elegiste <b>${pieces} ${pieces === 1 ? 'pieza' : 'piezas'}</b> a mano entre <b>342 fotos</b> mezcladas</li>
         <li><b>${S.results.antes} toques</b> en total</li>
-        <li><b>4</b> cambios de carpeta, una por rubro</li>
-        <li>Buscando entre <b>918 fotos</b> de la cámara · 3:14 AM</li>
+        <li>Sin orden y <b>sin cierre</b> del día</li>
+        <li>Todo a las <b>3:14 AM</b></li>
       </ul>`;
   }else{
     inner = `
       <div class="sm-emoji">✨</div>
       <div class="sm-title">Listo</div>
       <ul class="sm-list">
-        <li>Publicaste las <b>5 piezas</b> del día</li>
-        <li>Publicar en sí: <b>2 toques</b> (enviar + compartir)</li>
-        <li><b>${S.results.despues} toques</b> en total</li>
-        <li><b>0</b> cambios de carpeta · carpeta ya armada · 4:31 AM</li>
+        <li>El sistema dejó <b>20 piezas ordenadas</b>: buen día, 2 chistes, 16 productos y cierre</li>
+        <li>Vos hiciste <b>${S.results.despues} toques</b>: abrir, seleccionar todo, enviar, compartir</li>
+        <li><b>0</b> búsquedas · carpeta lista · <b>4:31 AM</b></li>
       </ul>`;
   }
   $('summaryBody').innerHTML = inner + `
@@ -1025,7 +1076,7 @@ function renderComparison(){
   const banner = $('cmpBanner');
   if(a != null && d != null){
     banner.classList.remove('wait');
-    banner.innerHTML = `Con el sistema Kenay: <b>${a - d} toques menos</b>, <b>0</b> cambios de carpeta y sin revisar 918 fotos a las 3 de la mañana.`;
+    banner.innerHTML = `Con el sistema Kenay: <b>${a - d} toques menos</b> y la carpeta del día lista y ordenada, sin buscar entre cientos de fotos a las 3 AM.`;
   }else{
     banner.classList.add('wait');
     banner.textContent = 'Completá los dos modos para ver la diferencia en números concretos.';
