@@ -97,9 +97,9 @@
 
   /* ---------- teléfono ---------- */
   .phone{
-    height:clamp(448px,80vh,624px);
+    height:clamp(500px,90vh,780px);
     aspect-ratio:301 / 636;      /* el ancho se calcula desde la altura -> siempre entra en pantalla */
-    width:auto;max-width:96vw;
+    width:auto;max-width:97vw;
     margin:0 auto;position:relative;
     background:linear-gradient(150deg,#43464c 0%,#202227 42%,#0e0f12 100%);
     padding:11px;border-radius:46px;
@@ -375,7 +375,22 @@
     padding:14px 12px;box-shadow:0 0 0 0 rgba(37,211,102,.6);animation:switchpulse 2.2s ease-out infinite;
   }
   .sm-actions button.hero:active{transform:scale(.98)}
+  .sm-actions button.cta-cmp{
+    background:linear-gradient(180deg,#ffd23f,#f7b500);border:none;color:#3a2c00;
+    font-weight:800;font-size:14.5px;padding:15px 12px;border-radius:12px;
+    animation:beat 1.4s ease-in-out infinite;transform-origin:center;
+  }
+  .sm-actions button.cta-cmp:active{filter:brightness(.95);animation:none;transform:scale(.97)}
   .sm-actions button.mini{font-size:11.5px;font-weight:500;color:var(--muted);padding:8px;border-color:transparent;background:none}
+  @keyframes beat{
+    0%,100%{transform:scale(1);   box-shadow:0 4px 14px rgba(247,181,0,.40), 0 0 0 0 rgba(247,181,0,.55)}
+    50%    {transform:scale(1.07); box-shadow:0 8px 22px rgba(247,181,0,.55), 0 0 0 12px rgba(247,181,0,0)}
+  }
+  #cmp.flash{animation:cmpflash 1.3s ease-out}
+  @keyframes cmpflash{
+    0%{box-shadow:0 0 0 3px var(--wa-teal), 0 6px 22px rgba(0,0,0,.06)}
+    100%{box-shadow:0 0 0 0 transparent, 0 6px 22px rgba(0,0,0,.06)}
+  }
 
   /* ---------- toast ---------- */
   #toast{
@@ -424,7 +439,7 @@
     .hud b{font-size:14px}
     .hud .hud-mode{display:none}
     .hud .hud-reset{font-size:11px;padding:7px 11px}
-    .phone{height:clamp(452px,82vh,600px)}
+    .phone{height:clamp(540px,91vh,860px)}
     #gate{margin-bottom:12px}
     .mode-btn{padding:12px}
     .cmp-banner{font-size:11.5px}
@@ -435,11 +450,16 @@
     .cmp-num{font-size:32px}
   }
   /* pantallas bajas apaisadas: que el teléfono no coma toda la altura */
-  @media (max-height:620px){
-    .phone{height:clamp(400px,90vh,560px)}
+  @media (max-height:560px){
+    .phone{height:clamp(360px,94vh,520px)}
   }
   @media (hover:none){
     .mode-btn:hover{border-color:var(--line);box-shadow:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hud .hud-reset,.sm-actions button.hero,.sm-actions button.cta-cmp,
+    .lock-wa,.lock-notif,.folder-chip,.tile.hint .chk{animation:none!important}
+    .sm-actions button.cta-cmp{box-shadow:0 4px 16px rgba(247,181,0,.5)}
   }
 </style>
 
@@ -1117,16 +1137,21 @@ function buildSummary(mode){
   const hero = mode === 'antes'
     ? '✨ Ver cómo sería con el sistema →'
     : '↺ Ver cómo es hoy, a mano →';
+  const bothDone = S.results.antes != null && S.results.despues != null;
   $('summaryBody').innerHTML = inner + `
     <div class="sm-actions">
       <button class="hero" onclick="chooseMode('${other}')">${hero}</button>
-      <button onclick="scrollToCmp()">Ver la comparación ↓</button>
+      <button class="cta-cmp" onclick="scrollToCmp()">👇 ${bothDone ? 'Ver los toques: ' + S.results.antes + ' vs ' + S.results.despues : 'Ver el total de toques'}</button>
       <button class="mini" onclick="chooseMode('${mode}')">Repetir este modo</button>
     </div>`;
 }
 
 function scrollToCmp(){
-  $('cmp').scrollIntoView({behavior:'smooth', block:'center'});
+  const el = $('cmp');
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
 }
 
 function renderComparison(){
