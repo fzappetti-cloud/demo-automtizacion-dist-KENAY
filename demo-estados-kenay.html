@@ -83,10 +83,17 @@
   .hud b{font-size:15px}
   .hud .hud-mode{font-size:11px;opacity:.7;border-left:1px solid rgba(255,255,255,.25);padding-left:8px}
   .hud .hud-reset{
-    margin-left:2px;border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:11px;
-    padding:5px 10px;border-radius:999px;cursor:pointer;
+    margin-left:4px;border:none;background:var(--wa-teal);color:#04261a;font:inherit;font-weight:700;font-size:11.5px;
+    padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;
+    box-shadow:0 0 0 0 rgba(37,211,102,.6);animation:switchpulse 2.6s ease-out infinite;
   }
-  .hud .hud-reset:hover{background:rgba(255,255,255,.24)}
+  .hud .hud-reset:hover{filter:brightness(1.06)}
+  .hud .hud-reset:active{transform:scale(.96)}
+  @keyframes switchpulse{
+    0%{box-shadow:0 0 0 0 rgba(37,211,102,.55)}
+    70%{box-shadow:0 0 0 9px rgba(37,211,102,0)}
+    100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}
+  }
 
   /* ---------- teléfono ---------- */
   .phone{
@@ -408,10 +415,10 @@
     .intro h1{font-size:15px}
     .intro p{font-size:12px}
     .intro .warn{font-size:10px}
-    .hud{font-size:12px;padding:6px 8px 6px 12px;margin-bottom:8px}
+    .hud{font-size:12px;padding:6px 6px 6px 12px;margin-bottom:8px;gap:6px}
     .hud b{font-size:14px}
-    .hud .hud-mode{font-size:10px;padding-left:6px}
-    .hud .hud-reset{font-size:10px;padding:5px 8px}
+    .hud .hud-mode{display:none}
+    .hud .hud-reset{font-size:11px;padding:7px 11px}
     .phone{height:clamp(452px,82vh,600px)}
     #gate{margin-bottom:12px}
     .mode-btn{padding:12px}
@@ -460,7 +467,7 @@
     <div class="hud">
       <span>👆 <b id="tapN">0</b> <span id="tapWord">toques</span></span>
       <span class="hud-mode" id="hudMode"></span>
-      <button class="hud-reset" onclick="resetRun()">↺ Cambiar modo</button>
+      <button class="hud-reset" id="hudSwitch" onclick="switchMode()">↺ Ver el otro modo</button>
     </div>
 
     <div class="phone">
@@ -784,6 +791,7 @@ function chooseMode(m){
   $('sim').classList.remove('hidden');
   updateHud();
   $('hudMode').textContent = (m === 'antes') ? 'Modo ANTES' : 'Modo DESPUÉS';
+  $('hudSwitch').textContent = (m === 'antes') ? '↺ Ver modo DESPUÉS' : '↺ Ver modo ANTES';
 
   const time = (m === 'antes') ? '3:14' : '4:31';
   $('sbTime').textContent = time;
@@ -803,6 +811,11 @@ function resetRun(){
   $('sim').classList.add('hidden');
   $('gate').classList.remove('hidden');
   window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// Botón resaltado del HUD: pasa directo al otro modo (ANTES <-> DESPUÉS)
+function switchMode(){
+  chooseMode(S.mode === 'antes' ? 'despues' : 'antes');
 }
 
 /* ---------- lock -> WhatsApp ---------- */
