@@ -14,6 +14,9 @@
   Archivo único, sin build, sin backend. Solo requiere internet para la fuente.
   ============================================================================
 -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#075E54">
 <title>Demo Estados Kenay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,8 +43,10 @@
     color:var(--ink);
     -webkit-font-smoothing:antialiased;
     padding:14px 12px 40px;
+    overflow-x:hidden;
   }
   .wrap{max-width:460px;margin:0 auto}
+  button{font-family:inherit}
 
   /* ---------- intro / gate ---------- */
   .intro{
@@ -85,9 +90,9 @@
 
   /* ---------- teléfono ---------- */
   .phone{
-    height:clamp(452px,76vh,608px);
+    height:clamp(448px,80vh,624px);
     aspect-ratio:301 / 636;      /* el ancho se calcula desde la altura -> siempre entra en pantalla */
-    width:auto;max-width:94vw;
+    width:auto;max-width:96vw;
     margin:0 auto;position:relative;
     background:linear-gradient(150deg,#43464c 0%,#202227 42%,#0e0f12 100%);
     padding:11px;border-radius:46px;
@@ -395,6 +400,35 @@
   @keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
   @keyframes softpulse{0%{box-shadow:0 0 0 0 rgba(37,211,102,.55)}70%{box-shadow:0 0 0 12px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}
   @keyframes chippulse{0%{box-shadow:0 0 0 0 rgba(7,94,84,.35)}70%{box-shadow:0 0 0 10px rgba(7,94,84,0)}100%{box-shadow:0 0 0 0 rgba(7,94,84,0)}}
+
+  /* ---------- móvil (la dueña lo abre desde el celular) ---------- */
+  @media (max-width:440px){
+    body{padding:10px 8px 30px}
+    .intro{padding:12px 13px;margin-bottom:10px}
+    .intro h1{font-size:15px}
+    .intro p{font-size:12px}
+    .intro .warn{font-size:10px}
+    .hud{font-size:12px;padding:6px 8px 6px 12px;margin-bottom:8px}
+    .hud b{font-size:14px}
+    .hud .hud-mode{font-size:10px;padding-left:6px}
+    .hud .hud-reset{font-size:10px;padding:5px 8px}
+    .phone{height:clamp(452px,82vh,600px)}
+    #gate{margin-bottom:12px}
+    .mode-btn{padding:12px}
+    .cmp-banner{font-size:11.5px}
+    footer{font-size:10px;margin-top:16px}
+  }
+  @media (max-width:340px){
+    .cmp-cards{grid-template-columns:1fr}
+    .cmp-num{font-size:32px}
+  }
+  /* pantallas bajas apaisadas: que el teléfono no coma toda la altura */
+  @media (max-height:620px){
+    .phone{height:clamp(400px,90vh,560px)}
+  }
+  @media (hover:none){
+    .mode-btn:hover{border-color:var(--line);box-shadow:none}
+  }
 </style>
 
 <div class="wrap">
