@@ -262,16 +262,32 @@
   .fl-meta small{font-size:11px;color:var(--muted)}
   .fl-cur{color:var(--wa-teal);font-weight:700}
 
-  .sel-all-bar{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;
-    padding:8px 12px;background:#e7f4ec;border-bottom:1px solid #cfe9d6;font-size:11.5px;color:#1e7d34;
-  }
+  .sel-all-bar{padding:8px 10px 9px;background:#eafaf0;border-bottom:1px solid #cfe9d6}
   .sel-all-bar[hidden]{display:none}
-  .sel-all-bar button{
-    border:1px solid var(--wa-teal);background:var(--wa-teal);color:#fff;font-family:inherit;font-weight:700;
-    font-size:11.5px;padding:6px 12px;border-radius:999px;cursor:pointer;
+  #selAllBtn{
+    width:100%;display:flex;align-items:center;gap:10px;text-align:left;cursor:pointer;
+    border:none;background:linear-gradient(180deg,#2ce06e,#12b455);color:#04261a;
+    padding:11px 12px;border-radius:13px;font-family:inherit;
+    animation:beatscale 1.5s ease-in-out infinite, glowg 2s ease-out infinite;
   }
-  .sel-all-bar button:active{filter:brightness(.95)}
+  #selAllBtn:active{transform:scale(.98);animation:none}
+  #selAllBtn .sab-check{
+    width:28px;height:28px;flex:0 0 auto;border-radius:50%;background:#04261a;color:#2ce06e;
+    display:grid;place-items:center;font-size:15px;font-weight:800;
+  }
+  #selAllBtn .sab-txt{display:flex;flex-direction:column;line-height:1.25}
+  #selAllBtn .sab-txt b{font-size:13.5px;font-weight:800}
+  #selAllBtn .sab-txt small{font-size:10.5px;opacity:.8;font-weight:600}
+  #selAllBtn.done{
+    background:#e7f4ec;color:#1e7d34;border:1px solid #cfe9d6;animation:none;box-shadow:none;
+  }
+  #selAllBtn.done .sab-check{background:#1e7d34;color:#fff}
+  @keyframes beatscale{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+  @keyframes glowg{
+    0%{box-shadow:0 4px 14px rgba(37,211,102,.42),0 0 0 0 rgba(37,211,102,.5)}
+    70%{box-shadow:0 7px 20px rgba(37,211,102,.5),0 0 0 11px rgba(37,211,102,0)}
+    100%{box-shadow:0 4px 14px rgba(37,211,102,.42),0 0 0 0 rgba(37,211,102,0)}
+  }
 
   .grid-note{font-size:11px;color:var(--muted);padding:7px 12px 3px;background:#fafafa}
   .grid{
@@ -457,9 +473,10 @@
     .mode-btn:hover{border-color:var(--line);box-shadow:none}
   }
   @media (prefers-reduced-motion:reduce){
-    .hud .hud-reset,.sm-actions button.hero,.sm-actions button.cta-cmp,
+    .hud .hud-reset,.sm-actions button.hero,.sm-actions button.cta-cmp,#selAllBtn,
     .lock-wa,.lock-notif,.folder-chip,.tile.hint .chk{animation:none!important}
     .sm-actions button.cta-cmp{box-shadow:0 4px 16px rgba(247,181,0,.5)}
+    #selAllBtn{box-shadow:0 4px 16px rgba(37,211,102,.45)}
   }
 </style>
 
@@ -565,8 +582,13 @@
           </div>
           <div class="folder-list hidden" id="folderList"></div>
           <div class="sel-all-bar" id="selAllBar" hidden>
-            <span>Carpeta del día</span>
-            <button id="selAllBtn" onclick="selectAll()">Seleccionar las 20</button>
+            <button id="selAllBtn" onclick="selectAll()">
+              <span class="sab-check">✓</span>
+              <span class="sab-txt">
+                <b id="sabTitle">Seleccionar las 20 de una vez</b>
+                <small id="sabSub">No hace falta tocarlas una por una</small>
+              </span>
+            </button>
           </div>
           <div class="grid-note" id="gridNote"></div>
           <div class="grid" id="grid"></div>
@@ -966,11 +988,12 @@ function pickFolder(id){
 function renderSelAll(){
   const show = S.mode === 'despues' && S.folderId === 'kenay';
   $('selAllBar').hidden = !show;
-  if(show){
-    const total = getFolder().photos.length;
-    const all = S.selected.length === total;
-    $('selAllBtn').textContent = all ? 'Quitar selección' : `Seleccionar las ${total}`;
-  }
+  if(!show) return;
+  const total = getFolder().photos.length;
+  const all = S.selected.length === total;
+  $('selAllBtn').classList.toggle('done', all);
+  $('sabTitle').textContent = all ? `Listo: las ${total} elegidas` : `Seleccionar las ${total} de una vez`;
+  $('sabSub').textContent  = all ? 'Tocá acá para quitar la selección' : 'No hace falta tocarlas una por una';
 }
 function selectAll(){
   const total = getFolder().photos.length;
@@ -1134,14 +1157,22 @@ function buildSummary(mode){
         <li><b>0</b> búsquedas · carpeta lista · <b>4:31 AM</b></li>
       </ul>`;
   }
-  const hero = mode === 'antes'
-    ? '✨ Ver cómo sería con el sistema →'
-    : '↺ Ver cómo es hoy, a mano →';
+  // Un solo botón principal:
+  //  - si todavía falta un modo -> botón verde que invita a hacer el otro
+  //  - cuando ya se hicieron los dos -> botón amarillo que lleva a los toques
   const bothDone = S.results.antes != null && S.results.despues != null;
+  let action;
+  if(bothDone){
+    action = `<button class="cta-cmp" onclick="scrollToCmp()">👇 Ver los toques: ${S.results.antes} vs ${S.results.despues}</button>`;
+  }else{
+    const hero = mode === 'antes'
+      ? '✨ Ver cómo sería con la automatización →'
+      : '↺ Ver cómo es hoy, a mano →';
+    action = `<button class="hero" onclick="chooseMode('${other}')">${hero}</button>`;
+  }
   $('summaryBody').innerHTML = inner + `
     <div class="sm-actions">
-      <button class="hero" onclick="chooseMode('${other}')">${hero}</button>
-      <button class="cta-cmp" onclick="scrollToCmp()">👇 ${bothDone ? 'Ver los toques: ' + S.results.antes + ' vs ' + S.results.despues : 'Ver el total de toques'}</button>
+      ${action}
       <button class="mini" onclick="chooseMode('${mode}')">Repetir este modo</button>
     </div>`;
 }
