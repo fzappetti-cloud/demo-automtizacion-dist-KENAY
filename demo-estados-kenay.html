@@ -85,17 +85,39 @@
 
   /* ---------- teléfono ---------- */
   .phone{
-    height:clamp(440px,74vh,600px);
-    aspect-ratio:300 / 649;      /* el ancho se calcula a partir de la altura -> siempre entra en pantalla */
+    height:clamp(452px,76vh,608px);
+    aspect-ratio:301 / 636;      /* el ancho se calcula desde la altura -> siempre entra en pantalla */
     width:auto;max-width:94vw;
-    margin:0 auto;background:#0a0a0a;padding:10px;border-radius:44px;
-    box-shadow:0 24px 60px rgba(0,0,0,.38),inset 0 0 0 2px #262626;position:relative;
+    margin:0 auto;position:relative;
+    background:linear-gradient(150deg,#43464c 0%,#202227 42%,#0e0f12 100%);
+    padding:11px;border-radius:46px;
+    box-shadow:
+      0 30px 60px -14px rgba(0,0,0,.55),
+      0 0 0 2px #08090b,
+      inset 0 0 0 2px rgba(255,255,255,.05),
+      inset 0 3px 8px rgba(255,255,255,.10),
+      inset 0 -3px 8px rgba(0,0,0,.5);
   }
+  .phone::after{ /* aro interno tipo bisel de aluminio */
+    content:"";position:absolute;inset:5px;border-radius:41px;
+    border:1px solid rgba(255,255,255,.06);pointer-events:none;
+  }
+  .phone .btn-pwr,.phone .btn-vol{
+    position:absolute;width:3px;background:linear-gradient(270deg,#0c0d0f,#34373d);
+    box-shadow:1px 1px 2px rgba(0,0,0,.5);
+  }
+  .phone .btn-pwr{right:-3px;top:30%;height:60px;border-radius:0 3px 3px 0}
+  .phone .btn-vol{left:-3px;top:22%;height:102px;border-radius:3px 0 0 3px;background:linear-gradient(90deg,#0c0d0f,#34373d)}
   .viewport{
-    position:relative;width:100%;height:100%;background:#000;border-radius:34px;overflow:hidden;
+    position:relative;width:100%;height:100%;
+    background:#000;border-radius:37px;overflow:hidden;box-shadow:inset 0 0 0 3px #000;
   }
-  .cam{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;
-    background:#0c0c0c;box-shadow:inset 0 0 0 1.5px #2b2b2b;z-index:45}
+  .cam{
+    position:absolute;top:11px;left:50%;transform:translateX(-50%);
+    width:11px;height:11px;border-radius:50%;z-index:45;
+    background:radial-gradient(circle at 34% 30%,#333844 0%,#0a0b0d 62%);
+    box-shadow:0 0 0 2px #000, inset 0 0 3px rgba(120,160,255,.35);
+  }
 
   .statusbar{
     position:absolute;top:0;left:0;right:0;height:26px;z-index:40;
@@ -111,11 +133,20 @@
   .batt::after{content:"";position:absolute;right:-3px;top:2px;width:2px;height:3px;background:currentColor;border-radius:0 1px 1px 0}
   .batt::before{content:"";position:absolute;left:1px;top:1px;bottom:1px;width:72%;background:currentColor;border-radius:1px}
 
-  .navbar{position:absolute;left:0;right:0;bottom:0;height:16px;z-index:40;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .navbar .pill{width:110px;height:4px;border-radius:2px;background:rgba(255,255,255,.55)}
-  .viewport[data-light="true"] .navbar .pill{background:rgba(0,0,0,.32)}
+  /* barra de navegación Android de 3 botones (atrás / inicio / recientes) */
+  .navbar{
+    position:absolute;left:0;right:0;bottom:0;height:32px;z-index:41;
+    display:flex;align-items:center;justify-content:space-around;background:rgba(0,0,0,.16);
+  }
+  .viewport[data-navlight="true"] .navbar{background:rgba(0,0,0,.02);border-top:1px solid rgba(0,0,0,.06)}
+  .nav-btn{width:52px;height:100%;border:none;background:none;cursor:pointer;display:grid;place-items:center;color:#fff}
+  .viewport[data-navlight="true"] .nav-btn{color:#41515b}
+  .nav-btn:active{background:rgba(128,128,128,.18)}
+  .nav-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .nb-circle{width:13px;height:13px;border-radius:50%;border:2px solid currentColor}
+  .nb-square{width:11px;height:11px;border-radius:2.5px;border:2px solid currentColor}
 
-  .screen{position:absolute;inset:0;display:none;flex-direction:column;padding-top:26px;padding-bottom:16px;background:#fff}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;padding-top:26px;padding-bottom:32px;background:#fff}
   .screen.active{display:flex}
 
   /* ---------- lock ---------- */
@@ -139,12 +170,13 @@
   .ln-time{font-size:10px;font-weight:400;opacity:.7}
   .ln-text{font-size:12px;opacity:.92;line-height:1.35;margin-top:2px}
   .lock-wa{
-    margin-top:auto;margin-bottom:8px;width:54px;height:54px;border-radius:16px;border:none;
+    margin-top:auto;margin-bottom:12px;width:38px;height:38px;border-radius:50%;border:none;
     background:var(--wa-teal);display:grid;place-items:center;cursor:pointer;
+    box-shadow:0 4px 12px rgba(0,0,0,.3);
   }
-  .lock-wa svg{width:30px;height:30px;fill:#fff}
+  .lock-wa svg{width:21px;height:21px;fill:#fff}
   .lock-wa.pulse{animation:softpulse 1.9s ease-out infinite}
-  .lock-hint{font-size:11px;opacity:.8;margin-bottom:6px}
+  .lock-hint{font-size:11px;opacity:.75;margin-bottom:8px}
   .hidden{display:none!important}
 
   /* ---------- WhatsApp header ---------- */
@@ -241,7 +273,7 @@
   .tile.hint .chk{animation:softpulse 1.8s ease-out infinite}
 
   .fab{
-    position:absolute;right:16px;bottom:30px;width:52px;height:52px;border-radius:50%;border:none;
+    position:absolute;right:16px;bottom:46px;width:52px;height:52px;border-radius:50%;border:none;
     background:var(--wa-teal);display:grid;place-items:center;cursor:pointer;z-index:8;
     box-shadow:0 8px 18px rgba(37,211,102,.45);transition:opacity .15s,transform .1s;
   }
@@ -309,7 +341,7 @@
 
   /* ---------- toast ---------- */
   #toast{
-    position:absolute;left:50%;bottom:74px;transform:translateX(-50%);z-index:60;pointer-events:none;
+    position:absolute;left:50%;bottom:88px;transform:translateX(-50%);z-index:60;pointer-events:none;
     background:rgba(0,0,0,.82);color:#fff;font-size:11.5px;padding:8px 14px;border-radius:16px;
     max-width:78%;text-align:center;opacity:0;transition:opacity .2s;line-height:1.35;
   }
@@ -377,7 +409,9 @@
     </div>
 
     <div class="phone">
-      <div class="viewport" id="viewport" data-light="false">
+      <span class="btn-vol"></span>
+      <span class="btn-pwr"></span>
+      <div class="viewport" id="viewport" data-light="false" data-navlight="false">
         <div class="cam"></div>
 
         <!-- barra de estado Android -->
@@ -433,7 +467,7 @@
         <!-- ===== SELECTOR DE GALERÍA ===== -->
         <div class="screen" id="scr-picker">
           <div class="pk-bar">
-            <button class="icon-btn" onclick="pickerBack()" aria-label="Volver">
+            <button class="icon-btn" onclick="navBack()" aria-label="Volver">
               <svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>
             </button>
             <button class="folder-chip" id="folderChip" onclick="toggleFolderList()">
@@ -454,7 +488,7 @@
         <!-- ===== VISTA PREVIA ===== -->
         <div class="screen" id="scr-preview">
           <div class="pv-top">
-            <button class="icon-btn" onclick="previewBack()" aria-label="Volver">
+            <button class="icon-btn" onclick="navBack()" aria-label="Volver">
               <svg viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></svg>
             </button>
             <span>Tu estado</span>
@@ -480,7 +514,13 @@
           <div id="summaryBody"></div>
         </div>
 
-        <div class="navbar"><span class="pill"></span></div>
+        <div class="navbar">
+          <button class="nav-btn" onclick="navBack()" aria-label="Atrás">
+            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <button class="nav-btn" onclick="navHome()" aria-label="Inicio"><span class="nb-circle"></span></button>
+          <button class="nav-btn" onclick="navRecents()" aria-label="Recientes"><span class="nb-square"></span></button>
+        </div>
         <div id="toast"></div>
       </div>
     </div>
@@ -493,7 +533,7 @@
       <div class="cmp-card a">
         <div class="cmp-tag">ANTES</div>
         <div class="cmp-num" id="cmpA">—</div>
-        <div class="cmp-meta">4 piezas · 4 cambios de carpeta · buscando entre 918 fotos</div>
+        <div class="cmp-meta">4 publicaciones separadas · 4 cambios de carpeta · entre 918 fotos</div>
       </div>
       <div class="cmp-card d">
         <div class="cmp-tag">DESPUÉS</div>
@@ -581,12 +621,14 @@ const SVG_CHECK = '<svg viewBox="0 0 24 24"><path d="M9 16.2l-4.2-4.2-1.4 1.4L9 
 const S = {
   mode:null, taps:0, waTab:'estados',
   folderId:'camara', selected:[], folderListOpen:false,
-  antesRounds:0, estadosReached:false,
+  antesRounds:0, antesPieces:0, estadosReached:false,
+  screen:'lock', nav:[],
   results:{antes:null, despues:null}
 };
 
 const $ = id => document.getElementById(id);
-const LIGHT_SCREENS = ['picker','confirm','summary']; // fondo claro -> texto oscuro en statusbar
+const STATUS_DARK = ['picker','confirm','summary'];              // texto oscuro en la barra de estado
+const NAV_DARK    = ['estados','picker','confirm','summary'];    // íconos oscuros en la barra de navegación
 
 function updateHud(){
   $('tapN').textContent = S.taps;
@@ -602,11 +644,52 @@ function toast(msg){
   toast._t = setTimeout(()=>el.classList.remove('show'), 1700);
 }
 
+/* ---------- router de pantallas + historial (se comporta como un teléfono) ---------- */
 function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>{
     s.classList.toggle('active', s.id === 'scr-'+name);
   });
-  $('viewport').dataset.light = LIGHT_SCREENS.includes(name) ? 'true' : 'false';
+  const vp = $('viewport');
+  vp.dataset.light = STATUS_DARK.includes(name) ? 'true' : 'false';
+  vp.dataset.navlight = NAV_DARK.includes(name) ? 'true' : 'false';
+}
+
+function render(name){
+  S.screen = name;
+  showScreen(name);
+  if(name === 'estados') renderEstados();
+  if(name === 'picker')  buildPicker();
+}
+
+// avanzar a una pantalla, apilando la actual en el historial
+function go(name){
+  S.nav.push(S.screen);
+  render(name);
+}
+
+// botón ATRÁS de Android
+function navBack(){
+  // 1) si el desplegable de carpetas está abierto, primero se cierra (igual que en el teléfono)
+  if(S.screen === 'picker' && S.folderListOpen){
+    S.folderListOpen = false;
+    renderFolderChip();
+    renderFolderList();
+    return;
+  }
+  // 2) volver a la pantalla anterior
+  if(S.nav.length === 0) return;
+  render(S.nav.pop());
+}
+
+// botón INICIO: vuelve a la pantalla de bloqueo sin perder el progreso
+function navHome(){
+  S.nav = [];
+  S.folderListOpen = false;
+  render('lock');
+}
+
+function navRecents(){
+  toast('Multitarea — no disponible en la demo.');
 }
 
 /* ---------- selección de modo ---------- */
@@ -614,9 +697,12 @@ function chooseMode(m){
   S.mode = m;
   S.taps = 0;
   S.antesRounds = 0;
+  S.antesPieces = 0;
   S.selected = [];
   S.folderListOpen = false;
   S.estadosReached = false;
+  S.nav = [];
+  S.screen = 'lock';
   S.folderId = (m === 'antes') ? 'camara' : 'kenay';
   S.waTab = (m === 'antes') ? 'chats' : 'estados';
 
@@ -649,8 +735,7 @@ function resetRun(){
 function openFromLock(){
   t();
   S.waTab = (S.mode === 'antes') ? 'chats' : 'estados';
-  renderEstados();
-  showScreen('estados');
+  go('estados');
 }
 
 /* ---------- pestañas WhatsApp ---------- */
@@ -712,8 +797,7 @@ function openMyStatus(){
   S.selected = [];
   S.folderListOpen = false;
   S.folderId = (S.mode === 'antes') ? 'camara' : 'kenay';
-  buildPicker();
-  showScreen('picker');
+  go('picker');
 }
 
 function getFolders(){ return S.mode === 'antes' ? FOLDERS_ANTES : FOLDERS_DESPUES; }
@@ -771,15 +855,15 @@ function pickFolder(id){
 function renderGrid(){
   const f = getFolder();
   $('gridNote').textContent = f.count.toLocaleString('es-AR') + ' elementos';
-  const multi = S.mode === 'despues';
-  const hintAll = multi && S.selected.length === 0; // en DESPUÉS: los checks laten sutilmente
+  // pista visual sutil: los checks laten cuando todavía no hay nada elegido en una carpeta del rubro
+  const hintAll = S.selected.length === 0 && S.folderId !== 'camara';
   $('grid').innerHTML = f.photos.map((p,i)=>{
     const pos = S.selected.indexOf(i);
     const isSel = pos > -1;
     const bgStyle = p.img
       ? `background-image:url('${p.img}')`
       : `background:${p.bg || '#ccc'}`;
-    const badge = isSel ? (multi ? (pos+1) : SVG_CHECK) : '';
+    const badge = isSel ? (pos + 1) : '';   // número de orden = multi-selección
     return `<button class="tile${isSel ? ' sel' : ''}${hintAll ? ' hint' : ''}" style="${bgStyle}" onclick="togglePhoto(${i})">
       ${p.img ? '' : `<span class="emo">${p.emoji || ''}</span>`}
       ${p.label ? `<span class="tlab">${p.label}</span>` : ''}
@@ -788,17 +872,19 @@ function renderGrid(){
   }).join('');
 }
 
+// Multi-selección en ambos modos (como la galería real del teléfono).
+// La fricción del modo ANTES es que las piezas están repartidas en 4 carpetas
+// distintas y no se puede seleccionar entre carpetas: hay que publicar una por una.
 function togglePhoto(i){
-  const multi = S.mode === 'despues';
-  if(multi){
-    const pos = S.selected.indexOf(i);
-    if(pos > -1){ S.selected.splice(pos,1); }
-    else{
-      if(S.selected.length >= 5){ toast('Ya elegiste las 5 piezas del día.'); return; }
-      S.selected.push(i);
-    }
+  const pos = S.selected.indexOf(i);
+  if(pos > -1){
+    S.selected.splice(pos, 1);
   }else{
-    S.selected = [i]; // ANTES: una sola foto por envío, sin multi-selección
+    if(S.mode === 'despues' && S.selected.length >= 5){
+      toast('Ya elegiste las 5 piezas del día.');
+      return;
+    }
+    S.selected.push(i);
   }
   t();
   renderGrid();
@@ -810,7 +896,7 @@ function updateFab(){
   const n = S.selected.length;
   $('fab').disabled = n === 0;
   const badge = $('fabBadge');
-  if(S.mode === 'despues' && n > 0){
+  if(n > 0){
     badge.textContent = n;
     badge.classList.remove('hidden');
   }else{
@@ -818,16 +904,12 @@ function updateFab(){
   }
 }
 
-function pickerBack(){
-  toast('Volvé con los controles de la pantalla.');
-}
-
 /* ---------- enviar -> vista previa ---------- */
 function sendFab(){
   if(S.selected.length === 0) return;
   t();
   buildPreview();
-  showScreen('preview');
+  go('preview');
 }
 
 function buildPreview(){
@@ -848,16 +930,12 @@ function buildPreview(){
   `;
 }
 
-function previewBack(){
-  t(); // "opción de volver atrás"
-  showScreen('picker');
-}
-
 /* ---------- compartir -> confirmación ---------- */
 function share(){
   t();
   buildConfirm();
-  showScreen('confirm');
+  S.nav = ['lock', 'estados'];        // tras publicar, ATRÁS vuelve a la lista de estados
+  render('confirm');
 }
 
 function buildConfirm(){
@@ -874,30 +952,33 @@ function buildConfirm(){
     return;
   }
   const posted = S.antesRounds + 1;
-  sub.textContent = `Pieza ${posted} de 4 publicada · llevás ${S.taps} toques.`;
+  const n = S.selected.length;
+  sub.textContent = `Publicación ${posted} de 4 · ${n} ${n === 1 ? 'pieza' : 'piezas'} · llevás ${S.taps} toques.`;
   if(posted < 4){
-    btn.textContent = 'Continuar';
+    btn.textContent = 'Seguir con la próxima carpeta';
     btn.onclick = antesContinue;
   }else{
     btn.textContent = 'Ver resumen';
-    btn.onclick = () => { t(); S.antesRounds = 4; finish('antes'); };
+    btn.onclick = () => { t(); S.antesPieces += S.selected.length; S.antesRounds = 4; finish('antes'); };
   }
 }
 
 function antesContinue(){
   t();
+  S.antesPieces += S.selected.length;
   S.antesRounds++;
   S.selected = [];
-  buildPicker();
-  showScreen('picker');
-  toast(`Pieza ${S.antesRounds + 1} de 4`);
+  S.nav = ['lock', 'estados'];
+  render('picker');
+  toast(`Publicación ${S.antesRounds + 1} de 4 — buscá en otra carpeta`);
 }
 
 /* ---------- resumen + comparación ---------- */
 function finish(mode){
   S.results[mode] = S.taps;
+  S.nav = [];
   buildSummary(mode);
-  showScreen('summary');
+  render('summary');
   renderComparison();
 }
 
@@ -909,10 +990,10 @@ function buildSummary(mode){
       <div class="sm-emoji">😮‍💨</div>
       <div class="sm-title">Terminaste</div>
       <ul class="sm-list">
-        <li>Publicaste <b>4 piezas</b></li>
+        <li>Publicaste <b>${S.antesPieces} ${S.antesPieces === 1 ? 'pieza' : 'piezas'}</b> en <b>4 publicaciones</b> separadas</li>
         <li><b>${S.results.antes} toques</b> en total</li>
-        <li><b>4</b> cambios de carpeta</li>
-        <li>Todo entre <b>918 fotos</b> de la cámara · 3:14 AM</li>
+        <li><b>4</b> cambios de carpeta, una por rubro</li>
+        <li>Buscando entre <b>918 fotos</b> de la cámara · 3:14 AM</li>
       </ul>`;
   }else{
     inner = `
