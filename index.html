@@ -63,16 +63,25 @@
   @media(min-width:420px){.gate-grid{grid-template-columns:1fr 1fr}}
   .mode-btn{
     text-align:left;border:2px solid var(--line);background:#fff;border-radius:var(--radius);
-    padding:14px 14px;cursor:pointer;transition:transform .12s ease,border-color .12s ease,box-shadow .12s;
-    display:flex;flex-direction:column;gap:3px;
+    padding:15px 15px 14px;cursor:pointer;transition:transform .12s ease,border-color .12s ease,box-shadow .12s;
+    display:flex;flex-direction:column;gap:4px;
   }
-  .mode-btn:hover{border-color:#c7d0d6;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+  .mode-btn.antes{border-color:#f0c6c1}
+  .mode-btn.despues{border-color:#bfe3c8}
+  .mode-btn:hover{box-shadow:0 6px 16px rgba(0,0,0,.10)}
   .mode-btn:active{transform:scale(.985)}
-  .mode-btn .mb-emoji{font-size:24px}
-  .mode-btn .mb-title{font-weight:700;font-size:14px}
+  .mode-btn .mb-emoji{font-size:26px}
+  .mode-btn .mb-title{font-weight:800;font-size:14.5px;line-height:1.3}
   .mode-btn.antes .mb-title{color:var(--antes)}
   .mode-btn.despues .mb-title{color:var(--despues)}
-  .mode-btn .mb-sub{font-size:12px;color:var(--muted);line-height:1.35}
+  .mode-btn .mb-sub{font-size:11.5px;color:var(--muted);line-height:1.3}
+  .mode-btn .mb-cta{
+    margin-top:7px;align-self:flex-start;font-size:12px;font-weight:800;
+    padding:6px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;
+    animation:beatscale 1.7s ease-in-out infinite;
+  }
+  .mode-btn.antes .mb-cta{background:#fdecea;color:var(--antes)}
+  .mode-btn.despues .mb-cta{background:#e7f6ec;color:var(--despues)}
 
   /* ---------- HUD ---------- */
   .hud{
@@ -473,7 +482,7 @@
     .mode-btn:hover{border-color:var(--line);box-shadow:none}
   }
   @media (prefers-reduced-motion:reduce){
-    .hud .hud-reset,.sm-actions button.hero,.sm-actions button.cta-cmp,#selAllBtn,
+    .hud .hud-reset,.sm-actions button.hero,.sm-actions button.cta-cmp,#selAllBtn,.mode-btn .mb-cta,
     .lock-wa,.lock-notif,.folder-chip,.tile.hint .chk{animation:none!important}
     .sm-actions button.cta-cmp{box-shadow:0 4px 16px rgba(247,181,0,.5)}
     #selAllBtn{box-shadow:0 4px 16px rgba(37,211,102,.45)}
@@ -493,13 +502,15 @@
     <div class="gate-grid">
       <button class="mode-btn antes" onclick="chooseMode('antes')">
         <span class="mb-emoji">😮‍💨</span>
-        <span class="mb-title">ANTES · como es hoy</span>
-        <span class="mb-sub">3:14 AM. Buscar foto por foto entre carpetas desordenadas del celular.</span>
+        <span class="mb-title">Mirá cómo lo hacés HOY</span>
+        <span class="mb-sub">Foto por foto entre cientos, a las 3 AM.</span>
+        <span class="mb-cta">👉 Tocá acá</span>
       </button>
       <button class="mode-btn despues" onclick="chooseMode('despues')">
         <span class="mb-emoji">✨</span>
-        <span class="mb-title">DESPUÉS · con el sistema</span>
-        <span class="mb-sub">4:31 AM. La carpeta “Estados Kenay” del día ya está armada y ordenada.</span>
+        <span class="mb-title">Mirá cómo sería CON LA MEJORA</span>
+        <span class="mb-sub">La carpeta del día ya lista y ordenada.</span>
+        <span class="mb-cta">👉 Tocá acá</span>
       </button>
     </div>
   </div>
