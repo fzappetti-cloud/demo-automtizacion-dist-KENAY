@@ -810,10 +810,15 @@ function navBack(){
 }
 
 // botón INICIO: vuelve a la pantalla de bloqueo sin perder el progreso
+// Botón INICIO de Android: vuelve a la portada inicial para repetir todo
+// la secuencia desde cero (elegir modo otra vez).
 function navHome(){
+  S.results = {antes:null, despues:null};
+  S.resPieces = {};
   S.nav = [];
   S.folderListOpen = false;
-  render('lock');
+  renderComparison();
+  resetRun();
 }
 
 function navRecents(){
